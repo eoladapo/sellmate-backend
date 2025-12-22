@@ -1,0 +1,1 @@
+export { RegistrationMethod } from './registration-method.enum';

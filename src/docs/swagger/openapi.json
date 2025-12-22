@@ -1,0 +1,6554 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SellMate API",
+    "version": "1.0.0",
+    "description": "\n# SellMate Platform - Social Commerce Automation Backend API\n\nSellMate is an intelligent social commerce automation platform designed specifically for Nigerian micro-entrepreneurs who sell through Instagram and WhatsApp.\n\n## Features\n- **Unified Conversations**: Consolidate WhatsApp and Instagram messages in one place\n- **AI-Powered Order Detection**: Automatically detect orders from conversations\n- **Profit Analytics**: Real-time business metrics and profit calculations\n- **Customer Management**: Track customer interactions across platforms\n\n## Authentication\nMost endpoints require JWT authentication. Include the token in the Authorization header:\n```\nAuthorization: Bearer <your_jwt_token>\n```\n\n## Rate Limiting\nAPI requests are rate-limited to prevent abuse. Current limits:\n- General: 100 requests per 15 minutes\n- Authentication: 5 requests per 15 minutes\n- AI endpoints: 20 requests per minute\n      ",
+    "contact": {
+      "name": "SellMate Team",
+      "email": "support@sellmate.ng"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.sellmate.ng",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter your JWT access token obtained from /auth/verify-otp or /auth/refresh"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "An error occurred"
+          },
+          "message": {
+            "type": "string",
+            "example": "Detailed error message"
+          },
+          "statusCode": {
+            "type": "integer",
+            "example": 400
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation successful"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "example": 1
+              },
+              "limit": {
+                "type": "integer",
+                "example": 20
+              },
+              "total": {
+                "type": "integer",
+                "example": 100
+              },
+              "totalPages": {
+                "type": "integer",
+                "example": 5
+              },
+              "hasMore": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "+2348123456789"
+          },
+          "businessName": {
+            "type": "string",
+            "example": "Kemi's Fashion Store"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "kemi@example.com"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "example": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "admin"
+            ],
+            "example": "user"
+          },
+          "operatingMode": {
+            "type": "string",
+            "enum": [
+              "lite",
+              "full"
+            ],
+            "example": "full"
+          },
+          "connectedPlatforms": {
+            "type": "object",
+            "properties": {
+              "whatsapp": {
+                "type": "object",
+                "properties": {
+                  "connected": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "businessAccountId": {
+                    "type": "string"
+                  },
+                  "connectedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "instagram": {
+                "type": "object",
+                "properties": {
+                  "connected": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "businessAccountId": {
+                    "type": "string"
+                  },
+                  "connectedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "onboardingCompleted": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "expiresIn": {
+            "type": "number",
+            "example": 900,
+            "description": "Access token expiry in seconds"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "phoneNumber",
+          "businessName"
+        ],
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+2348123456789",
+            "description": "Nigerian phone number"
+          },
+          "businessName": {
+            "type": "string",
+            "example": "Kemi's Fashion Store"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "kemi@example.com"
+          }
+        }
+      },
+      "VerifyOTPRequest": {
+        "type": "object",
+        "required": [
+          "phoneNumber",
+          "otp"
+        ],
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+2348123456789"
+          },
+          "otp": {
+            "type": "string",
+            "example": "123456",
+            "minLength": 6,
+            "maxLength": 6
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "whatsapp",
+              "instagram",
+              "manual"
+            ]
+          },
+          "platformConversationId": {
+            "type": "string"
+          },
+          "participantId": {
+            "type": "string"
+          },
+          "participantName": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "participantProfilePicture": {
+            "type": "string",
+            "format": "uri"
+          },
+          "lastMessageContent": {
+            "type": "string"
+          },
+          "lastMessageAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unreadCount": {
+            "type": "integer",
+            "example": 3
+          },
+          "isArchived": {
+            "type": "boolean",
+            "example": false
+          },
+          "notes": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "platformMessageId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "example": "I want to buy 2 pairs of shoes"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "video",
+              "audio",
+              "document",
+              "location"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "inbound",
+              "outbound"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "delivered",
+              "read",
+              "failed"
+            ]
+          },
+          "mediaUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceMessageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "whatsapp",
+              "instagram",
+              "manual"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "pending",
+              "confirmed",
+              "delivered",
+              "cancelled",
+              "expired",
+              "abandoned"
+            ],
+            "example": "pending"
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Red Sneakers"
+              },
+              "quantity": {
+                "type": "integer",
+                "example": 2
+              },
+              "sellingPrice": {
+                "type": "number",
+                "example": 15000
+              },
+              "costPrice": {
+                "type": "number",
+                "example": 10000
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "John Doe"
+              },
+              "contact": {
+                "type": "string",
+                "example": "+2348123456789"
+              },
+              "deliveryAddress": {
+                "type": "string",
+                "example": "123 Lagos Street, Ikeja"
+              }
+            }
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 30000
+          },
+          "profit": {
+            "type": "number",
+            "example": 10000
+          },
+          "profitMargin": {
+            "type": "number",
+            "example": 33.33
+          },
+          "notes": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "48 hours from creation"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": [
+          "product",
+          "customer"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product": {
+            "type": "object",
+            "required": [
+              "name",
+              "quantity",
+              "sellingPrice"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sellingPrice": {
+                "type": "number",
+                "minimum": 0
+              },
+              "costPrice": {
+                "type": "number",
+                "minimum": 0
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "customer": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "contact": {
+                "type": "string"
+              },
+              "deliveryAddress": {
+                "type": "string"
+              }
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "+2348123456789"
+          },
+          "platforms": {
+            "type": "object",
+            "properties": {
+              "whatsapp": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string"
+                  },
+                  "profileName": {
+                    "type": "string"
+                  },
+                  "lastInteraction": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "instagram": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "profileName": {
+                    "type": "string"
+                  },
+                  "lastInteraction": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "totalOrders": {
+            "type": "integer",
+            "example": 5
+          },
+          "totalSpent": {
+            "type": "number",
+            "example": 75000
+          },
+          "averageOrderValue": {
+            "type": "number",
+            "example": 15000
+          },
+          "lastOrderAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CustomerInsights": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
+          "orderHistory": {
+            "type": "object",
+            "properties": {
+              "totalOrders": {
+                "type": "integer"
+              },
+              "completedOrders": {
+                "type": "integer"
+              },
+              "cancelledOrders": {
+                "type": "integer"
+              },
+              "abandonedOrders": {
+                "type": "integer"
+              }
+            }
+          },
+          "purchasePatterns": {
+            "type": "object",
+            "properties": {
+              "preferredProducts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "averageOrderValue": {
+                "type": "number"
+              },
+              "purchaseFrequency": {
+                "type": "string",
+                "enum": [
+                  "frequent",
+                  "regular",
+                  "occasional",
+                  "rare"
+                ]
+              }
+            }
+          },
+          "platformActivity": {
+            "type": "object",
+            "properties": {
+              "primaryPlatform": {
+                "type": "string",
+                "enum": [
+                  "whatsapp",
+                  "instagram"
+                ]
+              },
+              "whatsappMessages": {
+                "type": "integer"
+              },
+              "instagramMessages": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "DashboardMetrics": {
+        "type": "object",
+        "properties": {
+          "revenue": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number",
+                "example": 500000
+              },
+              "previousPeriod": {
+                "type": "number",
+                "example": 450000
+              },
+              "percentageChange": {
+                "type": "number",
+                "example": 11.11
+              },
+              "trend": {
+                "type": "string",
+                "enum": [
+                  "increasing",
+                  "decreasing",
+                  "stable"
+                ]
+              }
+            }
+          },
+          "profit": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number",
+                "example": 150000
+              },
+              "margin": {
+                "type": "number",
+                "example": 30
+              },
+              "previousPeriod": {
+                "type": "number",
+                "example": 135000
+              },
+              "percentageChange": {
+                "type": "number",
+                "example": 11.11
+              }
+            }
+          },
+          "orders": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "example": 50
+              },
+              "completed": {
+                "type": "integer",
+                "example": 45
+              },
+              "pending": {
+                "type": "integer",
+                "example": 3
+              },
+              "cancelled": {
+                "type": "integer",
+                "example": 2
+              },
+              "completionRate": {
+                "type": "number",
+                "example": 90
+              }
+            }
+          },
+          "customers": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "example": 100
+              },
+              "new": {
+                "type": "integer",
+                "example": 15
+              },
+              "returning": {
+                "type": "integer",
+                "example": 35
+              },
+              "acquisitionRate": {
+                "type": "number",
+                "example": 15
+              }
+            }
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "new_message",
+              "order_detected",
+              "order_status_changed",
+              "order_expiring",
+              "order_expired",
+              "new_customer",
+              "low_inventory",
+              "profit_alert",
+              "integration_error",
+              "system"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "New Order Detected"
+          },
+          "message": {
+            "type": "string",
+            "example": "A potential order was detected in your WhatsApp conversation"
+          },
+          "data": {
+            "type": "object"
+          },
+          "isRead": {
+            "type": "boolean",
+            "example": false
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UserSettings": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "businessProfile": {
+            "$ref": "#/components/schemas/BusinessProfile"
+          },
+          "notificationPreferences": {
+            "$ref": "#/components/schemas/NotificationPreferences"
+          },
+          "integrationSettings": {
+            "$ref": "#/components/schemas/IntegrationSettings"
+          },
+          "dataPrivacySettings": {
+            "$ref": "#/components/schemas/DataPrivacySettings"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BusinessProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kemi's Fashion Store"
+          },
+          "contactPhone": {
+            "type": "string",
+            "example": "+2348123456789"
+          },
+          "defaultLocation": {
+            "type": "string",
+            "example": "Lagos, Nigeria"
+          },
+          "businessHours": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "example": "09:00"
+              },
+              "end": {
+                "type": "string",
+                "example": "18:00"
+              }
+            }
+          }
+        }
+      },
+      "NotificationPreferences": {
+        "type": "object",
+        "properties": {
+          "newMessage": {
+            "$ref": "#/components/schemas/NotificationTypeSetting"
+          },
+          "orderDetected": {
+            "$ref": "#/components/schemas/NotificationTypeSetting"
+          },
+          "orderStatusChanged": {
+            "$ref": "#/components/schemas/NotificationTypeSetting"
+          },
+          "orderExpiring": {
+            "$ref": "#/components/schemas/NotificationTypeSetting"
+          },
+          "lowInventory": {
+            "$ref": "#/components/schemas/ThresholdNotificationSetting"
+          },
+          "profitAlert": {
+            "$ref": "#/components/schemas/MarginNotificationSetting"
+          }
+        }
+      },
+      "NotificationTypeSetting": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "example": true
+          },
+          "channels": {
+            "type": "object",
+            "properties": {
+              "inApp": {
+                "type": "boolean",
+                "example": true
+              },
+              "sms": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "ThresholdNotificationSetting": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "example": true
+          },
+          "threshold": {
+            "type": "integer",
+            "example": 10
+          },
+          "channels": {
+            "type": "object",
+            "properties": {
+              "inApp": {
+                "type": "boolean",
+                "example": true
+              },
+              "sms": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "MarginNotificationSetting": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "example": true
+          },
+          "marginThreshold": {
+            "type": "number",
+            "example": 20
+          },
+          "channels": {
+            "type": "object",
+            "properties": {
+              "inApp": {
+                "type": "boolean",
+                "example": true
+              },
+              "sms": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "IntegrationSettings": {
+        "type": "object",
+        "properties": {
+          "whatsapp": {
+            "type": "object",
+            "properties": {
+              "autoSync": {
+                "type": "boolean",
+                "example": true
+              },
+              "syncInterval": {
+                "type": "integer",
+                "example": 5,
+                "description": "Sync interval in minutes"
+              }
+            }
+          },
+          "instagram": {
+            "type": "object",
+            "properties": {
+              "autoSync": {
+                "type": "boolean",
+                "example": true
+              },
+              "syncComments": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "DataPrivacySettings": {
+        "type": "object",
+        "properties": {
+          "dataRetentionDays": {
+            "type": "integer",
+            "example": 365
+          },
+          "allowAnalytics": {
+            "type": "boolean",
+            "example": true
+          },
+          "allowMarketing": {
+            "type": "boolean",
+            "example": false
+          },
+          "allowDataSharing": {
+            "type": "boolean",
+            "example": false
+          },
+          "allowAiProcessing": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "UpdateSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "businessProfile": {
+            "$ref": "#/components/schemas/BusinessProfile"
+          },
+          "notificationPreferences": {
+            "$ref": "#/components/schemas/NotificationPreferences"
+          },
+          "integrationSettings": {
+            "$ref": "#/components/schemas/IntegrationSettings"
+          },
+          "dataPrivacySettings": {
+            "$ref": "#/components/schemas/DataPrivacySettings"
+          }
+        }
+      },
+      "AIAnalysisResult": {
+        "type": "object",
+        "properties": {
+          "orderDetected": {
+            "type": "boolean",
+            "example": true
+          },
+          "confidence": {
+            "type": "number",
+            "example": 0.85,
+            "minimum": 0,
+            "maximum": 1
+          },
+          "extractedDetails": {
+            "type": "object",
+            "properties": {
+              "productName": {
+                "type": "string",
+                "example": "Red Sneakers"
+              },
+              "quantity": {
+                "type": "integer",
+                "example": 2
+              },
+              "price": {
+                "type": "number",
+                "example": 15000
+              },
+              "deliveryAddress": {
+                "type": "string"
+              },
+              "customerName": {
+                "type": "string"
+              }
+            }
+          },
+          "customerIntent": {
+            "type": "string",
+            "enum": [
+              "inquiry",
+              "purchase",
+              "complaint",
+              "support"
+            ],
+            "example": "purchase"
+          }
+        }
+      },
+      "AIResponseSuggestion": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "example": "Thank you for your order! I will process it right away."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "confirmation",
+              "clarification",
+              "upsell",
+              "support"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "example": 0.9
+          }
+        }
+      },
+      "IntegrationStatus": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "Whether the platform is connected"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "connected",
+              "disconnected",
+              "error",
+              "pending"
+            ],
+            "description": "Current connection status"
+          },
+          "businessAccountId": {
+            "type": "string",
+            "description": "Business account ID (if connected)"
+          },
+          "businessAccountName": {
+            "type": "string",
+            "description": "Business account name (if available)"
+          },
+          "connectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the integration was connected"
+          },
+          "lastSyncAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last successful sync timestamp"
+          },
+          "lastError": {
+            "type": "string",
+            "description": "Last error message (if any)"
+          },
+          "tokenExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the access token expires"
+          },
+          "isTokenExpiringSoon": {
+            "type": "boolean",
+            "description": "Whether the token expires within 24 hours"
+          }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "planId": {
+            "type": "string",
+            "enum": [
+              "starter",
+              "professional",
+              "business"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "cancelled",
+              "past_due",
+              "trialing",
+              "expired"
+            ]
+          },
+          "currentPeriodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "features": {
+            "type": "object",
+            "properties": {
+              "maxOrders": {
+                "type": "integer"
+              },
+              "maxConversations": {
+                "type": "integer"
+              },
+              "maxAiRequests": {
+                "type": "integer"
+              },
+              "analyticsAccess": {
+                "type": "boolean"
+              },
+              "prioritySupport": {
+                "type": "boolean"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Access token is missing or invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Invalid or expired token"
+                }
+              }
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "The requested resource was not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Not Found"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Resource not found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Request validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Validation Error"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Invalid request body"
+                },
+                "details": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "description": "Too many requests",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Too Many Requests"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Rate limit exceeded. Please try again later."
+                },
+                "retryAfter": {
+                  "type": "integer",
+                  "example": 60
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User registration, login, and token management"
+    },
+    {
+      "name": "OAuth",
+      "description": "Social platform OAuth flows for WhatsApp and Instagram"
+    },
+    {
+      "name": "Conversations",
+      "description": "Unified conversation management across platforms"
+    },
+    {
+      "name": "Orders",
+      "description": "Order creation, tracking, and lifecycle management"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer profile and insights management"
+    },
+    {
+      "name": "Analytics",
+      "description": "Business metrics, revenue analytics, and reporting"
+    },
+    {
+      "name": "Integrations",
+      "description": "WhatsApp and Instagram integration management"
+    },
+    {
+      "name": "Notifications",
+      "description": "In-app and SMS notification management"
+    },
+    {
+      "name": "Settings",
+      "description": "User preferences and configuration"
+    },
+    {
+      "name": "Subscription",
+      "description": "Subscription plans and billing management"
+    },
+    {
+      "name": "AI",
+      "description": "AI-powered order detection and response suggestions"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook endpoints for WhatsApp and Instagram"
+    },
+    {
+      "name": "Health",
+      "description": "System health and status endpoints"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Basic health check",
+        "description": "Returns the basic health status of the API including database and Redis connectivity",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "System is healthy or degraded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "degraded",
+                        "unhealthy"
+                      ],
+                      "example": "healthy"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "uptime": {
+                      "type": "number",
+                      "description": "Server uptime in seconds"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "v1"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "example": "development"
+                    },
+                    "services": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "string",
+                          "enum": [
+                            "connected",
+                            "disconnected",
+                            "error"
+                          ]
+                        },
+                        "redis": {
+                          "type": "string",
+                          "enum": [
+                            "connected",
+                            "disconnected",
+                            "error"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "System is unhealthy"
+          }
+        }
+      }
+    },
+    "/api/health/detailed": {
+      "get": {
+        "summary": "Detailed health check",
+        "description": "Returns comprehensive health information including all service statuses and system metrics",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed health information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "degraded",
+                            "unhealthy"
+                          ]
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "uptime": {
+                          "type": "number"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "environment": {
+                          "type": "string"
+                        },
+                        "services": {
+                          "type": "object",
+                          "properties": {
+                            "database": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string"
+                                },
+                                "responseTime": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "redis": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string"
+                                },
+                                "responseTime": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Health check failed"
+          }
+        }
+      }
+    },
+    "/api/health/live": {
+      "get": {
+        "summary": "Kubernetes liveness probe",
+        "description": "Returns 200 if the application is running. Used by Kubernetes to determine if the container should be restarted.",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Application is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "alive"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Application is not responding"
+          }
+        }
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "summary": "Kubernetes readiness probe",
+        "description": "Returns 200 if the application is ready to serve traffic. Used by Kubernetes to determine if traffic should be routed to this pod.",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Application is ready to serve traffic",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ready"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Application is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "not_ready"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/analyze": {
+      "post": {
+        "summary": "Analyze a message for order detection and intent",
+        "description": "Uses AI to analyze message content for potential orders, extract product details, customer information, and detect purchase intent",
+        "tags": [
+          "AI"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messageContent"
+                ],
+                "properties": {
+                  "messageContent": {
+                    "type": "string",
+                    "description": "The message content to analyze",
+                    "example": "I want to buy 2 pairs of the red shoes for 15000 naira"
+                  },
+                  "conversationId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Optional conversation ID for context"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "whatsapp",
+                      "instagram"
+                    ],
+                    "description": "The platform the message came from"
+                  },
+                  "customerHistory": {
+                    "type": "object",
+                    "description": "Optional customer history for better analysis"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message analysis result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "orderDetected": {
+                          "type": "boolean",
+                          "description": "Whether an order intent was detected"
+                        },
+                        "confidence": {
+                          "type": "number",
+                          "description": "Confidence score (0-1)"
+                        },
+                        "extractedDetails": {
+                          "type": "object",
+                          "properties": {
+                            "productName": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "number"
+                            },
+                            "price": {
+                              "type": "number"
+                            },
+                            "deliveryAddress": {
+                              "type": "string"
+                            },
+                            "customerName": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "customerIntent": {
+                          "type": "string",
+                          "enum": [
+                            "inquiry",
+                            "purchase",
+                            "complaint",
+                            "support"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "AI service error"
+          }
+        }
+      }
+    },
+    "/api/v1/ai/suggest-response": {
+      "post": {
+        "summary": "Generate response suggestions for a conversation",
+        "description": "Uses AI to generate contextually appropriate response suggestions based on conversation history and customer intent",
+        "tags": [
+          "AI"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conversationId"
+                ],
+                "properties": {
+                  "conversationId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The conversation ID to generate suggestions for"
+                  },
+                  "messageContent": {
+                    "type": "string",
+                    "description": "The latest message content"
+                  },
+                  "tone": {
+                    "type": "string",
+                    "enum": [
+                      "professional",
+                      "friendly",
+                      "casual"
+                    ],
+                    "default": "friendly",
+                    "description": "The tone for generated responses"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "english",
+                      "pidgin",
+                      "mixed"
+                    ],
+                    "default": "english",
+                    "description": "The language for generated responses"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response suggestions generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "suggestions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "type": "string",
+                                "description": "The suggested response text"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "confirmation",
+                                  "clarification",
+                                  "upsell",
+                                  "support"
+                                ]
+                              },
+                              "confidence": {
+                                "type": "number",
+                                "description": "Confidence score for this suggestion"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Conversation not found"
+          },
+          "500": {
+            "description": "AI service error"
+          }
+        }
+      }
+    },
+    "/api/v1/ai/insights": {
+      "get": {
+        "summary": "Generate business insights",
+        "description": "Uses AI to analyze business data and generate actionable insights including customer value predictions, purchase trends, and optimization suggestions",
+        "tags": [
+          "AI"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Start date for analysis period"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "End date for analysis period"
+          },
+          {
+            "in": "query",
+            "name": "insightTypes",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "upsell",
+                  "customer_value",
+                  "trend_analysis"
+                ]
+              }
+            },
+            "description": "Types of insights to generate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Business insights generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "insights": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "actionable": {
+                                "type": "boolean"
+                              },
+                              "priority": {
+                                "type": "string",
+                                "enum": [
+                                  "high",
+                                  "medium",
+                                  "low"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "highValueCustomers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "customerId": {
+                                "type": "string"
+                              },
+                              "predictedValue": {
+                                "type": "number"
+                              },
+                              "purchaseProbability": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        },
+                        "trends": {
+                          "type": "object",
+                          "properties": {
+                            "topProducts": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "peakHours": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "growthRate": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "AI service error"
+          }
+        }
+      }
+    },
+    "/api/v1/ai/status": {
+      "get": {
+        "summary": "Check AI service availability",
+        "description": "Returns the current status of the AI service including availability and configuration",
+        "tags": [
+          "AI"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI service status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "available": {
+                          "type": "boolean",
+                          "description": "Whether the AI service is available"
+                        },
+                        "provider": {
+                          "type": "string",
+                          "description": "The AI provider being used",
+                          "example": "gemini"
+                        },
+                        "features": {
+                          "type": "object",
+                          "properties": {
+                            "orderDetection": {
+                              "type": "boolean"
+                            },
+                            "responseGeneration": {
+                              "type": "boolean"
+                            },
+                            "businessInsights": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "rateLimit": {
+                          "type": "object",
+                          "properties": {
+                            "remaining": {
+                              "type": "number"
+                            },
+                            "resetAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "AI service unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/dashboard": {
+      "get": {
+        "summary": "Get dashboard metrics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start date for analytics period"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End date for analytics period"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard metrics including revenue, profit, orders, and customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "revenue": {
+                          "type": "object"
+                        },
+                        "profit": {
+                          "type": "object"
+                        },
+                        "orders": {
+                          "type": "object"
+                        },
+                        "customers": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/revenue": {
+      "get": {
+        "summary": "Get revenue analytics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue analytics with platform breakdown and trends",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "byPlatform": {
+                          "type": "object",
+                          "properties": {
+                            "whatsapp": {
+                              "type": "number"
+                            },
+                            "instagram": {
+                              "type": "number"
+                            },
+                            "manual": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "trend": {
+                          "type": "string",
+                          "enum": [
+                            "increasing",
+                            "decreasing",
+                            "stable"
+                          ]
+                        },
+                        "percentageChange": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/customers": {
+      "get": {
+        "summary": "Get customer analytics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer analytics with segmentation and top customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalCustomers": {
+                          "type": "number"
+                        },
+                        "newCustomers": {
+                          "type": "number"
+                        },
+                        "returningCustomers": {
+                          "type": "number"
+                        },
+                        "topCustomers": {
+                          "type": "array"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/export": {
+      "get": {
+        "summary": "Export analytics report",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeOrders",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeCustomers",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeProfit",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics report file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phoneNumber",
+                  "businessName"
+                ],
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "example": "+2348123456789"
+                  },
+                  "businessName": {
+                    "type": "string",
+                    "example": "Kemi's Fashion Store"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "kemi@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully, OTP sent"
+          },
+          "400": {
+            "description": "Validation error or user already exists"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Login existing user (sends OTP)",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phoneNumber"
+                ],
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "example": "+2348123456789"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP sent successfully"
+          },
+          "400": {
+            "description": "Invalid phone number"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-otp": {
+      "post": {
+        "summary": "Verify OTP and complete login",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phoneNumber",
+                  "otp"
+                ],
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "example": "+2348123456789"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful, returns tokens"
+          },
+          "400": {
+            "description": "Invalid OTP or too many attempts"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "description": "Exchange a valid refresh token for a new access token. The refresh token remains valid until it expires or is revoked.",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "refreshToken"
+                ],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "description": "The refresh token obtained during login"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New tokens generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AuthTokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired refresh token"
+          },
+          "401": {
+            "description": "Refresh token has been revoked"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Logout user",
+        "description": "Revokes the current refresh token, effectively logging out the user from the current device. The access token will remain valid until it expires.",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "refreshToken"
+                ],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "description": "The refresh token to revoke"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logged out successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid refresh token"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "summary": "Logout from all devices",
+        "description": "Revokes all refresh tokens for the authenticated user, logging them out from all devices. Requires a valid access token.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logged out from all devices successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logged out from all devices"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sessionsRevoked": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "Get current user profile",
+        "description": "Returns the profile information of the currently authenticated user including connected platforms and business details.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations": {
+      "get": {
+        "summary": "List conversations for authenticated user",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "platform",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "whatsapp",
+                "instagram"
+              ]
+            },
+            "description": "Filter by platform"
+          },
+          {
+            "in": "query",
+            "name": "unreadOnly",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter to show only unread conversations"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Items per page (max 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/unread-count": {
+      "get": {
+        "summary": "Get total unread message count",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread count"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/sync": {
+      "post": {
+        "summary": "Trigger message synchronization",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "platform"
+                ],
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "whatsapp",
+                      "instagram"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Sync initiated"
+          },
+          "400": {
+            "description": "Invalid platform or sync failed"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/sync/status": {
+      "get": {
+        "summary": "Get sync status for all platforms",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sync status for all platforms"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/manual": {
+      "post": {
+        "summary": "Create a manual conversation (Lite Mode)",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerName",
+                  "platform"
+                ],
+                "properties": {
+                  "customerName": {
+                    "type": "string"
+                  },
+                  "customerContact": {
+                    "type": "string"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "whatsapp",
+                      "instagram"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conversation created"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{id}": {
+      "get": {
+        "summary": "Get conversation details with messages",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation details"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update conversation",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "participantName": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "customerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation updated"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete conversation",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Conversation deleted"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{id}/messages": {
+      "post": {
+        "summary": "Send message in conversation",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "default": "text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{id}/messages/manual": {
+      "post": {
+        "summary": "Add manual message (Lite Mode)",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content",
+                  "sender"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "sender": {
+                    "type": "string",
+                    "enum": [
+                      "customer",
+                      "seller"
+                    ]
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message added"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{id}/read": {
+      "put": {
+        "summary": "Mark conversation as read",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation marked as read"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{id}/archive": {
+      "put": {
+        "summary": "Archive conversation",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation archived"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{id}/customer": {
+      "put": {
+        "summary": "Link customer to conversation",
+        "tags": [
+          "Conversations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerId"
+                ],
+                "properties": {
+                  "customerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer linked"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/customers": {
+      "get": {
+        "summary": "List customers for authenticated user",
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "platform",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "whatsapp",
+                "instagram"
+              ]
+            },
+            "description": "Filter by platform"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by name or phone"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of customers"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new customer",
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "phoneNumber": {
+                    "type": "string"
+                  },
+                  "platforms": {
+                    "type": "object",
+                    "properties": {
+                      "whatsapp": {
+                        "type": "object",
+                        "properties": {
+                          "phoneNumber": {
+                            "type": "string"
+                          },
+                          "profileName": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "instagram": {
+                        "type": "object",
+                        "properties": {
+                          "username": {
+                            "type": "string"
+                          },
+                          "profileName": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Customer created"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{id}": {
+      "get": {
+        "summary": "Get customer details",
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Customer ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer details"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update customer",
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "phoneNumber": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer updated"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete customer",
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Customer deleted"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{id}/insights": {
+      "get": {
+        "summary": "Get customer insights",
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer insights including order history and platform info"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/status": {
+      "get": {
+        "summary": "Get status of all integrations",
+        "description": "Returns the connection status for WhatsApp and Instagram integrations",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integration statuses retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "whatsapp": {
+                          "$ref": "#/components/schemas/IntegrationStatus"
+                        },
+                        "instagram": {
+                          "$ref": "#/components/schemas/IntegrationStatus"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/health": {
+      "get": {
+        "summary": "Get health status of connected integrations",
+        "description": "Performs health checks on all connected platforms",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Health status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "isHealthy": {
+                            "type": "boolean"
+                          },
+                          "apiReachable": {
+                            "type": "boolean"
+                          },
+                          "tokenValid": {
+                            "type": "boolean"
+                          },
+                          "webhookConfigured": {
+                            "type": "boolean"
+                          },
+                          "errors": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/whatsapp/connect": {
+      "post": {
+        "summary": "Connect WhatsApp Business integration",
+        "description": "Connects a WhatsApp Business account to the user's SellMate account",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "businessAccountId",
+                  "accessToken"
+                ],
+                "properties": {
+                  "businessAccountId": {
+                    "type": "string",
+                    "description": "WhatsApp Business Account ID",
+                    "example": "123456789012345"
+                  },
+                  "accessToken": {
+                    "type": "string",
+                    "description": "WhatsApp Business API access token",
+                    "example": "EAABsbCS..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "WhatsApp connected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "platform": {
+                          "type": "string",
+                          "example": "whatsapp"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "connected"
+                        },
+                        "businessAccountId": {
+                          "type": "string"
+                        },
+                        "connectedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials or connection failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/whatsapp/disconnect": {
+      "delete": {
+        "summary": "Disconnect WhatsApp Business integration",
+        "description": "Disconnects the WhatsApp Business account from the user's SellMate account",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "WhatsApp disconnected successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "No WhatsApp integration found"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/instagram/connect": {
+      "post": {
+        "summary": "Connect Instagram Business integration",
+        "description": "Connects an Instagram Business account to the user's SellMate account",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "businessAccountId",
+                  "accessToken"
+                ],
+                "properties": {
+                  "businessAccountId": {
+                    "type": "string",
+                    "description": "Instagram Business Account ID",
+                    "example": "17841400000000000"
+                  },
+                  "accessToken": {
+                    "type": "string",
+                    "description": "Instagram API access token",
+                    "example": "IGQVJYeU..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Instagram connected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "platform": {
+                          "type": "string",
+                          "example": "instagram"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "connected"
+                        },
+                        "businessAccountId": {
+                          "type": "string"
+                        },
+                        "connectedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials or connection failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/instagram/disconnect": {
+      "delete": {
+        "summary": "Disconnect Instagram Business integration",
+        "description": "Disconnects the Instagram Business account from the user's SellMate account",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Instagram disconnected successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "No Instagram integration found"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/sync": {
+      "post": {
+        "summary": "Trigger manual sync for a platform",
+        "description": "Manually triggers message synchronization for a specific platform",
+        "tags": [
+          "Integrations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "platform"
+                ],
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "whatsapp",
+                      "instagram"
+                    ],
+                    "description": "Platform to sync",
+                    "example": "whatsapp"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "messagesCount": {
+                          "type": "integer",
+                          "description": "Number of messages synced"
+                        },
+                        "conversationsCount": {
+                          "type": "integer",
+                          "description": "Number of conversations updated"
+                        },
+                        "lastSyncAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "hasMore": {
+                          "type": "boolean",
+                          "description": "Whether there are more messages to sync"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Platform not connected or invalid platform"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Sync already in progress"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "summary": "Get user notifications",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "new_message",
+                "order_detected",
+                "order_status_changed",
+                "order_expiring",
+                "order_expired",
+                "new_customer",
+                "low_inventory",
+                "profit_alert",
+                "integration_error",
+                "system"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "isRead",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of notifications"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/unread-count": {
+      "get": {
+        "summary": "Get unread notification count",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "put": {
+        "summary": "Mark all notifications as read",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All notifications marked as read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "put": {
+        "summary": "Mark notification as read",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}": {
+      "delete": {
+        "summary": "Delete notification",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Notification deleted"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/whatsapp": {
+      "get": {
+        "summary": "Initiate WhatsApp OAuth flow",
+        "description": "Initiates the OAuth 2.0 flow for connecting a WhatsApp Business account.\nReturns an authorization URL that the user should be redirected to.\nThe user will authenticate with Meta and grant permissions to SellMate.\n",
+        "tags": [
+          "OAuth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth initiation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "authorizationUrl": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "URL to redirect the user for OAuth authorization"
+                        },
+                        "state": {
+                          "type": "string",
+                          "description": "State parameter for CSRF protection"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/whatsapp/callback": {
+      "get": {
+        "summary": "Handle WhatsApp OAuth callback",
+        "description": "Handles the OAuth callback from Meta after user authorization.\nExchanges the authorization code for access tokens and stores them securely.\nThis endpoint is called by Meta's OAuth server, not directly by the client.\n",
+        "tags": [
+          "OAuth"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Authorization code from Meta"
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "State parameter for CSRF validation"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to frontend with success or error status"
+          },
+          "400": {
+            "description": "Invalid state or authorization code"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/whatsapp/disconnect": {
+      "delete": {
+        "summary": "Disconnect WhatsApp account",
+        "description": "Disconnects the WhatsApp Business account from the user's SellMate account.\nRevokes stored tokens and removes the integration. Existing conversations are preserved.\n",
+        "tags": [
+          "OAuth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WhatsApp disconnected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "WhatsApp account disconnected successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "No WhatsApp integration found"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/instagram": {
+      "get": {
+        "summary": "Initiate Instagram OAuth flow",
+        "description": "Initiates the OAuth 2.0 flow for connecting an Instagram Business account.\nReturns an authorization URL that the user should be redirected to.\nRequires an Instagram Business or Creator account linked to a Facebook Page.\n",
+        "tags": [
+          "OAuth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth initiation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "authorizationUrl": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "URL to redirect the user for OAuth authorization"
+                        },
+                        "state": {
+                          "type": "string",
+                          "description": "State parameter for CSRF protection"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/instagram/callback": {
+      "get": {
+        "summary": "Handle Instagram OAuth callback",
+        "description": "Handles the OAuth callback from Meta after user authorization.\nExchanges the authorization code for access tokens and stores them securely.\nThis endpoint is called by Meta's OAuth server, not directly by the client.\n",
+        "tags": [
+          "OAuth"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Authorization code from Meta"
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "State parameter for CSRF validation"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to frontend with success or error status"
+          },
+          "400": {
+            "description": "Invalid state or authorization code"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/instagram/disconnect": {
+      "delete": {
+        "summary": "Disconnect Instagram account",
+        "description": "Disconnects the Instagram Business account from the user's SellMate account.\nRevokes stored tokens and removes the integration. Existing conversations are preserved.\n",
+        "tags": [
+          "OAuth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instagram disconnected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Instagram account disconnected successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "No Instagram integration found"
+          }
+        }
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "summary": "List orders",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "pending",
+                "confirmed",
+                "delivered",
+                "cancelled",
+                "expired",
+                "abandoned"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "customerId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of orders"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create order (expires in 48 hours if not confirmed)",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "product",
+                  "customer"
+                ],
+                "properties": {
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "conversationId": {
+                    "type": "string"
+                  },
+                  "product": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "number"
+                      },
+                      "sellingPrice": {
+                        "type": "number"
+                      },
+                      "costPrice": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "customer": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "contact": {
+                        "type": "string"
+                      },
+                      "deliveryAddress": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created with 48-hour expiration"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/abandoned": {
+      "get": {
+        "summary": "Get abandoned orders",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of abandoned orders"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/expired": {
+      "get": {
+        "summary": "Get expired orders",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of expired orders"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/customer/{customerId}": {
+      "get": {
+        "summary": "Get orders by customer",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer orders"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "summary": "Get order details",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update order",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product": {
+                    "type": "object"
+                  },
+                  "customer": {
+                    "type": "object"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete order",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Order deleted"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/status": {
+      "put": {
+        "summary": "Update order status",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "pending",
+                      "confirmed",
+                      "delivered",
+                      "cancelled",
+                      "expired",
+                      "abandoned"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/reactivate": {
+      "post": {
+        "summary": "Reactivate expired or abandoned order (resets 48-hour timer)",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order reactivated with new 48-hour expiration"
+          },
+          "400": {
+            "description": "Order cannot be reactivated (not expired/abandoned)"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/abandon": {
+      "post": {
+        "summary": "Mark order as abandoned",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order marked as abandoned"
+          },
+          "400": {
+            "description": "Cannot abandon confirmed/delivered orders"
+          }
+        }
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "summary": "Get all user settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User settings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserSettings"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update all user settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated successfully"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/profile": {
+      "get": {
+        "summary": "Get business profile settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Business profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BusinessProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update business profile settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Business name"
+                  },
+                  "contactPhone": {
+                    "type": "string",
+                    "description": "Contact phone number"
+                  },
+                  "defaultLocation": {
+                    "type": "string",
+                    "description": "Default business location"
+                  },
+                  "businessHours": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "description": "Opening time (HH:MM)"
+                      },
+                      "end": {
+                        "type": "string",
+                        "description": "Closing time (HH:MM)"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Business profile updated successfully"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/notifications": {
+      "get": {
+        "summary": "Get notification preferences",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification preferences retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationPreferences"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update notification preferences",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newMessage": {
+                    "$ref": "#/components/schemas/NotificationTypeSetting"
+                  },
+                  "orderDetected": {
+                    "$ref": "#/components/schemas/NotificationTypeSetting"
+                  },
+                  "orderStatusChanged": {
+                    "$ref": "#/components/schemas/NotificationTypeSetting"
+                  },
+                  "orderExpiring": {
+                    "$ref": "#/components/schemas/NotificationTypeSetting"
+                  },
+                  "lowInventory": {
+                    "$ref": "#/components/schemas/ThresholdNotificationSetting"
+                  },
+                  "profitAlert": {
+                    "$ref": "#/components/schemas/MarginNotificationSetting"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification preferences updated successfully"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/integrations": {
+      "get": {
+        "summary": "Get integration settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integration settings retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update integration settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "whatsapp": {
+                    "type": "object",
+                    "properties": {
+                      "autoSync": {
+                        "type": "boolean"
+                      },
+                      "syncInterval": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "instagram": {
+                    "type": "object",
+                    "properties": {
+                      "autoSync": {
+                        "type": "boolean"
+                      },
+                      "syncComments": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Integration settings updated successfully"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/privacy": {
+      "get": {
+        "summary": "Get data privacy settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data privacy settings retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update data privacy settings",
+        "tags": [
+          "Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dataRetentionDays": {
+                    "type": "number",
+                    "description": "Data retention period in days"
+                  },
+                  "allowAnalytics": {
+                    "type": "boolean"
+                  },
+                  "allowMarketing": {
+                    "type": "boolean"
+                  },
+                  "allowDataSharing": {
+                    "type": "boolean"
+                  },
+                  "allowAiProcessing": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data privacy settings updated successfully"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription": {
+      "get": {
+        "summary": "Get current subscription details",
+        "description": "Returns the user's current subscription plan, status, and features",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/usage": {
+      "get": {
+        "summary": "Get current usage statistics",
+        "description": "Returns usage metrics against plan limits",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "orders": {
+                          "type": "object",
+                          "properties": {
+                            "used": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "percentage": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "conversations": {
+                          "type": "object",
+                          "properties": {
+                            "used": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "percentage": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "aiRequests": {
+                          "type": "object",
+                          "properties": {
+                            "used": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "percentage": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/billing": {
+      "get": {
+        "summary": "Get billing cycle information",
+        "description": "Returns current billing cycle details and next billing date",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Billing information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "currentPeriodStart": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "currentPeriodEnd": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "nextBillingDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "amount": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/payments": {
+      "get": {
+        "summary": "Get payment history",
+        "description": "Returns list of past payments and invoices",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment history retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "number"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "successful",
+                              "failed",
+                              "pending",
+                              "refunded"
+                            ]
+                          },
+                          "paidAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/upgrade": {
+      "post": {
+        "summary": "Upgrade subscription plan",
+        "description": "Upgrades the user's subscription to a higher tier plan",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planId"
+                ],
+                "properties": {
+                  "planId": {
+                    "type": "string",
+                    "enum": [
+                      "starter",
+                      "professional",
+                      "business"
+                    ],
+                    "description": "Target plan to upgrade to"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription upgraded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid plan or cannot upgrade"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/downgrade": {
+      "post": {
+        "summary": "Downgrade subscription plan",
+        "description": "Downgrades the user's subscription to a lower tier plan (effective at end of billing cycle)",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planId"
+                ],
+                "properties": {
+                  "planId": {
+                    "type": "string",
+                    "enum": [
+                      "starter",
+                      "professional",
+                      "business"
+                    ],
+                    "description": "Target plan to downgrade to"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Downgrade scheduled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "effectiveDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid plan or cannot downgrade"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/cancel": {
+      "post": {
+        "summary": "Cancel subscription",
+        "description": "Cancels the subscription (access continues until end of billing period)",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Optional cancellation reason"
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "description": "Optional feedback"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "cancelledAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "accessEndsAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/reactivate": {
+      "post": {
+        "summary": "Reactivate cancelled subscription",
+        "description": "Reactivates a cancelled subscription before the access period ends",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription reactivated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Subscription cannot be reactivated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/payment-method": {
+      "put": {
+        "summary": "Add a new payment method",
+        "description": "Adds a new payment method to the user's account",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "card",
+                      "bank_transfer"
+                    ]
+                  },
+                  "cardNumber": {
+                    "type": "string",
+                    "description": "Card number (for card type)"
+                  },
+                  "expiryMonth": {
+                    "type": "string"
+                  },
+                  "expiryYear": {
+                    "type": "string"
+                  },
+                  "cvv": {
+                    "type": "string"
+                  },
+                  "bankCode": {
+                    "type": "string",
+                    "description": "Bank code (for bank_transfer type)"
+                  },
+                  "accountNumber": {
+                    "type": "string",
+                    "description": "Account number (for bank_transfer type)"
+                  },
+                  "setAsDefault": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment method added successfully"
+          },
+          "400": {
+            "description": "Invalid payment method details"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/payment-method/{index}": {
+      "delete": {
+        "summary": "Remove a payment method",
+        "description": "Removes a payment method from the user's account",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Index of the payment method to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment method removed successfully"
+          },
+          "400": {
+            "description": "Cannot remove default payment method"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Payment method not found"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/payment-method/{index}/default": {
+      "put": {
+        "summary": "Set a payment method as default",
+        "description": "Sets the specified payment method as the default for billing",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Index of the payment method to set as default"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default payment method updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Payment method not found"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/calculate-change": {
+      "post": {
+        "summary": "Calculate cost of plan change",
+        "description": "Calculates prorated costs for upgrading or downgrading plans",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targetPlanId"
+                ],
+                "properties": {
+                  "targetPlanId": {
+                    "type": "string",
+                    "enum": [
+                      "starter",
+                      "professional",
+                      "business"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cost calculation completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "currentPlan": {
+                          "type": "string"
+                        },
+                        "targetPlan": {
+                          "type": "string"
+                        },
+                        "proratedCredit": {
+                          "type": "number"
+                        },
+                        "amountDue": {
+                          "type": "number"
+                        },
+                        "effectiveDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/retry-payment": {
+      "post": {
+        "summary": "Retry failed payment",
+        "description": "Retries a failed payment for the current billing cycle",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment retry initiated"
+          },
+          "400": {
+            "description": "No failed payment to retry"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/initialize-payment": {
+      "post": {
+        "summary": "Initialize a Paystack payment transaction",
+        "description": "Creates a new payment transaction with Paystack",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planId"
+                ],
+                "properties": {
+                  "planId": {
+                    "type": "string",
+                    "enum": [
+                      "starter",
+                      "professional",
+                      "business"
+                    ]
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "description": "URL to redirect after payment"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initialized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "authorizationUrl": {
+                          "type": "string",
+                          "description": "URL to redirect user for payment"
+                        },
+                        "accessCode": {
+                          "type": "string"
+                        },
+                        "reference": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/verify-payment": {
+      "post": {
+        "summary": "Verify a Paystack payment after callback",
+        "description": "Verifies the payment status after user returns from Paystack",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reference"
+                ],
+                "properties": {
+                  "reference": {
+                    "type": "string",
+                    "description": "Payment reference from Paystack"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failed",
+                            "pending"
+                          ]
+                        },
+                        "subscription": {
+                          "$ref": "#/components/schemas/Subscription"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid reference or payment failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/subscription/webhook/paystack": {
+      "post": {
+        "summary": "Handle Paystack webhook events",
+        "description": "Receives and processes webhook events from Paystack",
+        "tags": [
+          "Subscription"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully"
+          },
+          "400": {
+            "description": "Invalid webhook signature"
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/whatsapp": {
+      "get": {
+        "summary": "WhatsApp webhook verification",
+        "description": "Meta sends a GET request to verify the webhook URL during setup.\nThis endpoint validates the verify token and returns the challenge.\n",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hub.mode",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Should be \"subscribe\""
+          },
+          {
+            "in": "query",
+            "name": "hub.verify_token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The verify token configured in Meta App settings"
+          },
+          {
+            "in": "query",
+            "name": "hub.challenge",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Challenge string to return if verification succeeds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification successful, returns the challenge",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verification failed - invalid verify token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "WhatsApp webhook event handler",
+        "description": "Receives incoming messages and status updates from WhatsApp.\nMeta sends POST requests with message events, delivery receipts, and read receipts.\nThe endpoint verifies the signature before processing.\n",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-hub-signature-256",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "HMAC SHA256 signature of the request body"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "type": "string",
+                    "example": "whatsapp_business_account"
+                  },
+                  "entry": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "changes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "field": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event received and acknowledged",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "EVENT_RECEIVED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/instagram": {
+      "get": {
+        "summary": "Instagram webhook verification",
+        "description": "Meta sends a GET request to verify the webhook URL during setup.\nThis endpoint validates the verify token and returns the challenge.\n",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hub.mode",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Should be \"subscribe\""
+          },
+          {
+            "in": "query",
+            "name": "hub.verify_token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The verify token configured in Meta App settings"
+          },
+          {
+            "in": "query",
+            "name": "hub.challenge",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Challenge string to return if verification succeeds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification successful, returns the challenge",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verification failed - invalid verify token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Instagram webhook event handler",
+        "description": "Receives incoming DMs and status updates from Instagram.\nMeta sends POST requests with messaging events.\nThe endpoint verifies the signature before processing.\n",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-hub-signature-256",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "HMAC SHA256 signature of the request body"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "type": "string",
+                    "example": "instagram"
+                  },
+                  "entry": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "time": {
+                          "type": "number"
+                        },
+                        "messaging": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "sender": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "recipient": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "timestamp": {
+                                "type": "number"
+                              },
+                              "message": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event received and acknowledged",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "EVENT_RECEIVED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1 @@
+export { validateNigerianPhone } from './validate-nigerian-phone.helper';
