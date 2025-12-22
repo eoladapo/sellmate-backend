@@ -1,13 +1,11 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { AuthController } from '../../../modules/auth/controllers/auth.controller';
 import { authMiddleware } from '../../middleware';
-import { container, TOKENS } from '../../../di';
+import { TOKENS } from '../../../di';
+import { bind } from '../../utils/controller-bind';
 import oauthRoutes from './oauth.routes';
 
 const router = Router();
-
-// Lazy getter for Auth controller (container must be initialized first)
-const getAuthController = (): AuthController => container.resolve<AuthController>(TOKENS.AuthController);
 
 /**
  * @swagger
@@ -40,9 +38,7 @@ const getAuthController = (): AuthController => container.resolve<AuthController
  *       400:
  *         description: Validation error or user already exists
  */
-router.post('/register', (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().register(req, res, next);
-});
+router.post('/register', bind<AuthController>(TOKENS.AuthController, 'register'));
 
 /**
  * @swagger
@@ -68,9 +64,7 @@ router.post('/register', (req: Request, res: Response, next: NextFunction) => {
  *       400:
  *         description: Invalid phone number
  */
-router.post('/login', (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().login(req, res, next);
-});
+router.post('/login', bind<AuthController>(TOKENS.AuthController, 'login'));
 
 /**
  * @swagger
@@ -100,16 +94,13 @@ router.post('/login', (req: Request, res: Response, next: NextFunction) => {
  *       400:
  *         description: Invalid OTP or too many attempts
  */
-router.post('/verify-otp', (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().verifyOTPAndLogin(req, res, next);
-});
+router.post('/verify-otp', bind<AuthController>(TOKENS.AuthController, 'verifyOTPAndLogin'));
 
 /**
  * @swagger
  * /api/v1/auth/refresh:
  *   post:
  *     summary: Refresh access token
- *     description: Exchange a valid refresh token for a new access token. The refresh token remains valid until it expires or is revoked.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -122,35 +113,19 @@ router.post('/verify-otp', (req: Request, res: Response, next: NextFunction) => 
  *             properties:
  *               refreshToken:
  *                 type: string
- *                 description: The refresh token obtained during login
  *     responses:
  *       200:
  *         description: New tokens generated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/AuthTokens'
  *       400:
  *         description: Invalid or expired refresh token
- *       401:
- *         description: Refresh token has been revoked
  */
-router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().refreshToken(req, res, next);
-});
+router.post('/refresh', bind<AuthController>(TOKENS.AuthController, 'refreshToken'));
 
 /**
  * @swagger
  * /api/v1/auth/logout:
  *   post:
  *     summary: Logout user
- *     description: Revokes the current refresh token, effectively logging out the user from the current device. The access token will remain valid until it expires.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -163,92 +138,45 @@ router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
  *             properties:
  *               refreshToken:
  *                 type: string
- *                 description: The refresh token to revoke
  *     responses:
  *       200:
  *         description: Logout successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Logged out successfully
  *       400:
  *         description: Invalid refresh token
  */
-router.post('/logout', (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().logout(req, res, next);
-});
+router.post('/logout', bind<AuthController>(TOKENS.AuthController, 'logout'));
 
 /**
  * @swagger
  * /api/v1/auth/logout-all:
  *   post:
  *     summary: Logout from all devices
- *     description: Revokes all refresh tokens for the authenticated user, logging them out from all devices. Requires a valid access token.
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Logged out from all devices successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Logged out from all devices
- *                 data:
- *                   type: object
- *                   properties:
- *                     sessionsRevoked:
- *                       type: integer
- *                       example: 3
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/logout-all', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().logoutAllDevices(req, res, next);
-});
+router.post('/logout-all', authMiddleware, bind<AuthController>(TOKENS.AuthController, 'logoutAllDevices'));
 
 /**
  * @swagger
  * /api/v1/auth/me:
  *   get:
  *     summary: Get current user profile
- *     description: Returns the profile information of the currently authenticated user including connected platforms and business details.
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User profile retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/User'
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get('/me', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getAuthController().getCurrentUser(req, res, next);
-});
+router.get('/me', authMiddleware, bind<AuthController>(TOKENS.AuthController, 'getCurrentUser'));
 
 // Mount OAuth routes under /oauth
 router.use('/oauth', oauthRoutes);

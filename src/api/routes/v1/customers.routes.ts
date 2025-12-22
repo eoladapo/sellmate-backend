@@ -1,12 +1,10 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { CustomerController } from '../../../modules/customers/controllers';
 import { authMiddleware } from '../../middleware';
-import { container, TOKENS } from '../../../di';
+import { TOKENS } from '../../../di';
+import { bind } from '../../utils/controller-bind';
 
 const router = Router();
-
-const getCustomerController = (): CustomerController =>
-  container.resolve<CustomerController>(TOKENS.CustomerController);
 
 /**
  * @swagger
@@ -16,37 +14,11 @@ const getCustomerController = (): CustomerController =>
  *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: platform
- *         schema:
- *           type: string
- *           enum: [whatsapp, instagram]
- *         description: Filter by platform
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Search by name or phone
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
  *     responses:
  *       200:
  *         description: List of customers
- *       401:
- *         description: Unauthorized
  */
-router.get('/', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getCustomerController().listCustomers(req, res, next);
-});
+router.get('/', authMiddleware, bind<CustomerController>(TOKENS.CustomerController, 'listCustomers'));
 
 /**
  * @swagger
@@ -56,47 +28,11 @@ router.get('/', authMiddleware, (req: Request, res: Response, next: NextFunction
  *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               name:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *               platforms:
- *                 type: object
- *                 properties:
- *                   whatsapp:
- *                     type: object
- *                     properties:
- *                       phoneNumber:
- *                         type: string
- *                       profileName:
- *                         type: string
- *                   instagram:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       profileName:
- *                         type: string
- *               notes:
- *                 type: string
  *     responses:
  *       201:
  *         description: Customer created
- *       400:
- *         description: Validation error
  */
-router.post('/', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getCustomerController().createCustomer(req, res, next);
-});
+router.post('/', authMiddleware, bind<CustomerController>(TOKENS.CustomerController, 'createCustomer'));
 
 /**
  * @swagger
@@ -106,22 +42,11 @@ router.post('/', authMiddleware, (req: Request, res: Response, next: NextFunctio
  *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Customer ID
  *     responses:
  *       200:
  *         description: Customer details
- *       404:
- *         description: Customer not found
  */
-router.get('/:id', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getCustomerController().getCustomer(req, res, next);
-});
+router.get('/:id', authMiddleware, bind<CustomerController>(TOKENS.CustomerController, 'getCustomer'));
 
 /**
  * @swagger
@@ -131,33 +56,11 @@ router.get('/:id', authMiddleware, (req: Request, res: Response, next: NextFunct
  *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *               notes:
- *                 type: string
  *     responses:
  *       200:
  *         description: Customer updated
- *       404:
- *         description: Customer not found
  */
-router.put('/:id', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getCustomerController().updateCustomer(req, res, next);
-});
+router.put('/:id', authMiddleware, bind<CustomerController>(TOKENS.CustomerController, 'updateCustomer'));
 
 /**
  * @swagger
@@ -167,21 +70,11 @@ router.put('/:id', authMiddleware, (req: Request, res: Response, next: NextFunct
  *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       204:
  *         description: Customer deleted
- *       404:
- *         description: Customer not found
  */
-router.delete('/:id', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getCustomerController().deleteCustomer(req, res, next);
-});
+router.delete('/:id', authMiddleware, bind<CustomerController>(TOKENS.CustomerController, 'deleteCustomer'));
 
 /**
  * @swagger
@@ -191,20 +84,10 @@ router.delete('/:id', authMiddleware, (req: Request, res: Response, next: NextFu
  *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
- *         description: Customer insights including order history and platform info
- *       404:
- *         description: Customer not found
+ *         description: Customer insights
  */
-router.get('/:id/insights', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getCustomerController().getCustomerInsights(req, res, next);
-});
+router.get('/:id/insights', authMiddleware, bind<CustomerController>(TOKENS.CustomerController, 'getCustomerInsights'));
 
 export default router;

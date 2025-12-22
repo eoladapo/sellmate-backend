@@ -1,12 +1,10 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { AnalyticsController } from '../../../modules/analytics/controllers';
 import { authMiddleware } from '../../middleware';
-import { container, TOKENS } from '../../../di';
+import { TOKENS } from '../../../di';
+import { bind } from '../../utils/controller-bind';
 
 const router = Router();
-
-const getAnalyticsController = (): AnalyticsController =>
-  container.resolve<AnalyticsController>(TOKENS.AnalyticsController);
 
 /**
  * @swagger
@@ -34,28 +32,8 @@ const getAnalyticsController = (): AnalyticsController =>
  *     responses:
  *       200:
  *         description: Dashboard metrics including revenue, profit, orders, and customers
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     revenue:
- *                       type: object
- *                     profit:
- *                       type: object
- *                     orders:
- *                       type: object
- *                     customers:
- *                       type: object
  */
-router.get('/dashboard', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getAnalyticsController().getDashboardMetrics(req, res, next);
-});
+router.get('/dashboard', authMiddleware, bind<AnalyticsController>(TOKENS.AnalyticsController, 'getDashboardMetrics'));
 
 /**
  * @swagger
@@ -81,36 +59,8 @@ router.get('/dashboard', authMiddleware, (req: Request, res: Response, next: Nex
  *     responses:
  *       200:
  *         description: Revenue analytics with platform breakdown and trends
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     total:
- *                       type: number
- *                     byPlatform:
- *                       type: object
- *                       properties:
- *                         whatsapp:
- *                           type: number
- *                         instagram:
- *                           type: number
- *                         manual:
- *                           type: number
- *                     trend:
- *                       type: string
- *                       enum: [increasing, decreasing, stable]
- *                     percentageChange:
- *                       type: number
  */
-router.get('/revenue', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getAnalyticsController().getRevenueAnalytics(req, res, next);
-});
+router.get('/revenue', authMiddleware, bind<AnalyticsController>(TOKENS.AnalyticsController, 'getRevenueAnalytics'));
 
 /**
  * @swagger
@@ -136,28 +86,8 @@ router.get('/revenue', authMiddleware, (req: Request, res: Response, next: NextF
  *     responses:
  *       200:
  *         description: Customer analytics with segmentation and top customers
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     totalCustomers:
- *                       type: number
- *                     newCustomers:
- *                       type: number
- *                     returningCustomers:
- *                       type: number
- *                     topCustomers:
- *                       type: array
  */
-router.get('/customers', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getAnalyticsController().getCustomerAnalytics(req, res, next);
-});
+router.get('/customers', authMiddleware, bind<AnalyticsController>(TOKENS.AnalyticsController, 'getCustomerAnalytics'));
 
 /**
  * @swagger
@@ -186,34 +116,10 @@ router.get('/customers', authMiddleware, (req: Request, res: Response, next: Nex
  *           type: string
  *           enum: [json, csv]
  *           default: json
- *       - in: query
- *         name: includeOrders
- *         schema:
- *           type: boolean
- *           default: true
- *       - in: query
- *         name: includeCustomers
- *         schema:
- *           type: boolean
- *           default: true
- *       - in: query
- *         name: includeProfit
- *         schema:
- *           type: boolean
- *           default: true
  *     responses:
  *       200:
  *         description: Analytics report file
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *           text/csv:
- *             schema:
- *               type: string
  */
-router.get('/export', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
-  getAnalyticsController().exportReport(req, res, next);
-});
+router.get('/export', authMiddleware, bind<AnalyticsController>(TOKENS.AnalyticsController, 'exportReport'));
 
 export default router;
