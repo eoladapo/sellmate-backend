@@ -1,13 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AuthController } from '../../../modules/auth/controllers/auth.controller';
 import { authMiddleware } from '../../middleware';
-import { getService } from '../../../container';
+import { container, TOKENS } from '../../../di';
 import oauthRoutes from './oauth.routes';
 
 const router = Router();
 
 // Lazy getter for Auth controller (container must be initialized first)
-const getAuthController = (): AuthController => getService<AuthController>('AuthController');
+const getAuthController = (): AuthController => container.resolve<AuthController>(TOKENS.AuthController);
 
 /**
  * @swagger

@@ -1,11 +1,14 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
+import { TOKENS } from '../../../di/tokens';
 import { AnalyticsService } from '../services/analytics.service';
 import { DateRangeQuerySchema, ExportQuerySchema } from '../dto';
 import { ReportFormat } from '../enums';
 import { successResponse } from '../../../shared/utils/response.util';
 
+@injectable()
 export class AnalyticsController {
-  constructor(private analyticsService: AnalyticsService) { }
+  constructor(@inject(TOKENS.AnalyticsService) private analyticsService: AnalyticsService) { }
 
   /**
    * GET /api/v1/analytics/dashboard

@@ -1,9 +1,20 @@
+import { injectable, inject } from 'tsyringe';
 import { IOTPService, SendOTPResult, VerifyOTPResult } from '../interfaces/otp-service.interface';
 import { IOTPRepository } from '../interfaces/otp-repository.interface';
 import { generateOTP, hashOTP, verifyOTPHash } from '../../../shared/helpers/otp';
 import { validateNigerianPhone } from '../../../shared/helpers/validation';
 import { appConfig } from '../../../config/app.config';
+import { TOKENS } from '../../../di/tokens';
 
+// SMS Service interface (to be implemented with Twilio or Termii)
+export interface ISMSService {
+  sendSMS(
+    phoneNumber: string,
+    message: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }>;
+}
+
+@injectable()
 export class OTPService implements IOTPService {
   private readonly OTP_EXPIRY_MINUTES = appConfig.otp.expiryMinutes;
   private readonly MAX_ATTEMPTS = appConfig.otp.maxAttempts;
@@ -11,9 +22,9 @@ export class OTPService implements IOTPService {
   private readonly PROGRESSIVE_DELAYS = appConfig.otp.progressiveDelays;
 
   constructor(
-    private otpRepository: IOTPRepository,
-    private smsService: ISMSService
-  ) { }
+    @inject(TOKENS.OTPRepository) private otpRepository: IOTPRepository,
+    @inject(TOKENS.SMSService) private smsService: ISMSService
+  ) {}
 
   async sendOTP(phoneNumber: string): Promise<SendOTPResult> {
     // Validate phone number format
@@ -54,7 +65,10 @@ export class OTPService implements IOTPService {
       });
 
       // Send OTP via SMS
-      const smsResult = await this.smsService.sendSMS(phoneNumber, `Your SellMate verification code is: ${otp}. Valid for ${this.OTP_EXPIRY_MINUTES} minutes.`);
+      const smsResult = await this.smsService.sendSMS(
+        phoneNumber,
+        `Your SellMate verification code is: ${otp}. Valid for ${this.OTP_EXPIRY_MINUTES} minutes.`
+      );
 
       if (!smsResult.success) {
         // In development mode, still return success with OTP for testing
@@ -128,7 +142,9 @@ export class OTPService implements IOTPService {
 
       // Check attempt limits and progressive delays
       if (otpRecord.attempts >= this.MAX_ATTEMPTS) {
-        const lockedUntil = new Date(otpRecord.createdAt.getTime() + this.LOCKOUT_MINUTES * 60 * 1000);
+        const lockedUntil = new Date(
+          otpRecord.createdAt.getTime() + this.LOCKOUT_MINUTES * 60 * 1000
+        );
         if (new Date() < lockedUntil) {
           return {
             success: false,
@@ -138,7 +154,8 @@ export class OTPService implements IOTPService {
         }
       } else if (otpRecord.attempts > 0) {
         // Apply progressive delay based on attempt count
-        const delaySeconds = this.PROGRESSIVE_DELAYS[Math.min(otpRecord.attempts, this.PROGRESSIVE_DELAYS.length - 1)];
+        const delaySeconds =
+          this.PROGRESSIVE_DELAYS[Math.min(otpRecord.attempts, this.PROGRESSIVE_DELAYS.length - 1)];
         const nextAttemptTime = new Date(otpRecord.updatedAt.getTime() + delaySeconds * 1000);
 
         if (new Date() < nextAttemptTime) {
@@ -189,9 +206,4 @@ export class OTPService implements IOTPService {
   async cleanupExpiredOTPs(): Promise<number> {
     return this.otpRepository.deleteExpired();
   }
-}
-
-// SMS Service interface (to be implemented with Twilio or Termii)
-export interface ISMSService {
-  sendSMS(phoneNumber: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }>;
 }

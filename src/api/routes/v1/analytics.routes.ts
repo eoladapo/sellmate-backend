@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AnalyticsController } from '../../../modules/analytics/controllers';
 import { authMiddleware } from '../../middleware';
-import { getService } from '../../../container';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
 const getAnalyticsController = (): AnalyticsController =>
-  getService<AnalyticsController>('AnalyticsController');
+  container.resolve<AnalyticsController>(TOKENS.AnalyticsController);
 
 /**
  * @swagger

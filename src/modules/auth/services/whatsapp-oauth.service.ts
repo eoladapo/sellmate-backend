@@ -1,7 +1,9 @@
+import { injectable, inject } from 'tsyringe';
 import { IOAuthService } from '../interfaces/oauth-service.interface';
 import { IOAuthTokenRepository } from '../interfaces/oauth-token-repository.interface';
 import { IUserRepository } from '../interfaces/user-repository.interface';
 import { encryptOAuthToken, decryptOAuthToken } from '../../../shared/helpers/encryption';
+import { TOKENS } from '../../../di/tokens';
 
 export interface WhatsAppOAuthResult {
   success: boolean;
@@ -17,22 +19,25 @@ export interface WhatsAppOAuthResult {
   error?: string;
 }
 
+@injectable()
 export class WhatsAppOAuthService {
   // Meta OAuth Scopes for WhatsApp Business API (2024)
   // These permissions allow SellMate to manage the seller's WhatsApp Business
   private readonly whatsappScopes = [
     'whatsapp_business_management', // Manage WhatsApp Business Account
-    'whatsapp_business_messaging',  // Send/receive messages
-    'business_management',          // Access business info
+    'whatsapp_business_messaging', // Send/receive messages
+    'business_management', // Access business info
   ];
 
   constructor(
-    private oauthService: IOAuthService,
-    private oauthTokenRepository: IOAuthTokenRepository,
-    private userRepository: IUserRepository
-  ) { }
+    @inject(TOKENS.OAuthService) private oauthService: IOAuthService,
+    @inject(TOKENS.OAuthTokenRepository) private oauthTokenRepository: IOAuthTokenRepository,
+    @inject(TOKENS.UserRepository) private userRepository: IUserRepository
+  ) {}
 
-  async initiateOAuth(userId: string): Promise<{ success: boolean; authUrl?: string; error?: string }> {
+  async initiateOAuth(
+    userId: string
+  ): Promise<{ success: boolean; authUrl?: string; error?: string }> {
     try {
       // Generate state parameter
       const state = await this.oauthService.generateState(userId, 'whatsapp');
@@ -251,7 +256,10 @@ export class WhatsAppOAuthService {
         }
 
         // Get updated token
-        const updatedToken = await this.oauthTokenRepository.findByUserAndPlatform(userId, 'whatsapp');
+        const updatedToken = await this.oauthTokenRepository.findByUserAndPlatform(
+          userId,
+          'whatsapp'
+        );
         if (!updatedToken) {
           return null;
         }

@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, DeepPartial } from 'typeorm';
 import { Conversation, LastMessageSummary } from '../entities';
 import {
@@ -8,15 +9,17 @@ import {
 } from '../interfaces';
 import { Platform } from '../../integrations/enums';
 import { ConversationStatus, MessageSender } from '../enums';
+import { TOKENS } from '../../../di/tokens';
 
 /**
  * Conversation Repository
  * Handles database operations for conversations
  */
+@injectable()
 export class ConversationRepository implements IConversationRepository {
   private repository: Repository<Conversation>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(Conversation);
   }
 
@@ -24,10 +27,7 @@ export class ConversationRepository implements IConversationRepository {
     return this.repository.findOne({ where: { id } });
   }
 
-  async findByIdWithMessages(
-    id: string,
-    messageLimit: number = 50
-  ): Promise<Conversation | null> {
+  async findByIdWithMessages(id: string, messageLimit: number = 50): Promise<Conversation | null> {
     return this.repository
       .createQueryBuilder('conversation')
       .leftJoinAndSelect('conversation.messages', 'message')

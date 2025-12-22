@@ -1,11 +1,14 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, LessThan } from 'typeorm';
 import { AuthSession } from '../entities/auth-session.entity';
 import { IAuthSessionRepository } from '../interfaces/auth-session-repository.interface';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class AuthSessionRepository implements IAuthSessionRepository {
   private repository: Repository<AuthSession>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(AuthSession);
   }
 

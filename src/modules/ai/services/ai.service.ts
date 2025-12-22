@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { GeminiService } from './gemini.service';
 import {
   IAIService,
@@ -187,6 +188,7 @@ interface RawBusinessInsightsResponse {
  * Provides order detection, response suggestions, and business insights
  * Optimized for Nigerian social commerce patterns
  */
+@injectable()
 export class AIService implements IAIService {
   private geminiService: GeminiService;
 

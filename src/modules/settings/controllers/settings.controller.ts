@@ -1,4 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
+import { TOKENS } from '../../../di/tokens';
 import { SettingsService } from '../services';
 import { successResponse } from '../../../shared/utils/response.util';
 import { AppError } from '../../../api/middleware/error.middleware';
@@ -14,8 +16,9 @@ import {
  * Settings controller
  * Handles HTTP requests for user settings management
  */
+@injectable()
 export class SettingsController {
-  constructor(private settingsService: SettingsService) { }
+  constructor(@inject(TOKENS.SettingsService) private settingsService: SettingsService) { }
 
   /**
    * Get all user settings

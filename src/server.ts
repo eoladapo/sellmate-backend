@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { Server } from 'http';
 import { initializeDatabase, closeDatabase, getDataSource } from './database/config/data-source';
 import { initializeRedis, closeRedis } from './config/redis.config';
-import { initializeContainer } from './container';
+import { initializeContainer } from './di';
 
 // Load environment variables
 dotenv.config();

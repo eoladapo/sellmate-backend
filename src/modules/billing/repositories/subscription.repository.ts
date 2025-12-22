@@ -1,15 +1,18 @@
-import { Repository, DataSource, LessThan } from 'typeorm';
-import { Subscription, PLAN_LIMITS, PLAN_PRICING } from '../entities';
+import { injectable, inject } from 'tsyringe';
+import { Repository, DataSource } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
+import { Subscription, PLAN_PRICING } from '../entities';
 import { ISubscriptionRepository } from '../interfaces';
 import { SubscriptionPlan, SubscriptionStatus, BillingCycle } from '../enums';
 
 /**
- * Subscription repository implementation
+ * Subscription repository implementation (simplified for MVP)
  */
+@injectable()
 export class SubscriptionRepository implements ISubscriptionRepository {
   private repository: Repository<Subscription>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(Subscription);
   }
 
@@ -37,20 +40,8 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
       trialEnd,
-      usageLimits: PLAN_LIMITS[SubscriptionPlan.STARTER],
-      currentUsage: {
-        conversations: 0,
-        orders: 0,
-        customers: 0,
-        integrations: 0,
-        aiRequestsThisMonth: 0,
-        storageUsedGB: 0,
-        lastResetDate: now,
-      },
       amount: PLAN_PRICING[SubscriptionPlan.STARTER].monthly,
       currency: 'NGN',
-      paymentMethods: [],
-      failedPaymentCount: 0,
       ...data,
     });
 
@@ -78,46 +69,5 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       subscription = await this.create(userId);
     }
     return subscription;
-  }
-
-  async findExpiringSoon(days: number): Promise<Subscription[]> {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + days);
-
-    return this.repository.find({
-      where: {
-        status: SubscriptionStatus.ACTIVE,
-        currentPeriodEnd: LessThan(futureDate),
-      },
-    });
-  }
-
-  async findPastDue(): Promise<Subscription[]> {
-    return this.repository.find({
-      where: {
-        status: SubscriptionStatus.PAST_DUE,
-      },
-    });
-  }
-
-  async findTrialsEndingSoon(days: number): Promise<Subscription[]> {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + days);
-
-    return this.repository.find({
-      where: {
-        status: SubscriptionStatus.TRIAL,
-        trialEnd: LessThan(futureDate),
-      },
-    });
-  }
-
-  async findActiveSubscriptions(): Promise<Subscription[]> {
-    return this.repository.find({
-      where: [
-        { status: SubscriptionStatus.ACTIVE },
-        { status: SubscriptionStatus.TRIAL },
-      ],
-    });
   }
 }

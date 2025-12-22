@@ -1,19 +1,31 @@
-import { IAuthService, RegisterResult, LoginResult, SendOTPResult } from '../interfaces/auth-service.interface';
+import { injectable, inject } from 'tsyringe';
+import {
+  IAuthService,
+  RegisterResult,
+  LoginResult,
+  SendOTPResult,
+} from '../interfaces/auth-service.interface';
 import { IUserRepository } from '../interfaces/user-repository.interface';
 import { IOTPService } from '../interfaces/otp-service.interface';
 import { IJWTService, AuthTokens } from '../interfaces/jwt-service.interface';
 import { UserValidator } from '../validators/user.validator';
 import { DeviceInfo } from '../interfaces/device-info.interface';
 import { RegistrationMethod } from '../enums/registration-method.enum';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class AuthService implements IAuthService {
   constructor(
-    private userRepository: IUserRepository,
-    private otpService: IOTPService,
-    private jwtService: IJWTService
-  ) { }
+    @inject(TOKENS.UserRepository) private userRepository: IUserRepository,
+    @inject(TOKENS.OTPService) private otpService: IOTPService,
+    @inject(TOKENS.JWTService) private jwtService: IJWTService
+  ) {}
 
-  async register(phoneNumber: string, businessName: string, email?: string): Promise<RegisterResult> {
+  async register(
+    phoneNumber: string,
+    businessName: string,
+    email?: string
+  ): Promise<RegisterResult> {
     try {
       // Validate input
       const validatedData = UserValidator.validateRegistration({
@@ -59,7 +71,9 @@ export class AuthService implements IAuthService {
       return {
         success: true,
         user,
-        message: otpResult.success ? 'User registered successfully. OTP sent.' : 'User registered but failed to send OTP.',
+        message: otpResult.success
+          ? 'User registered successfully. OTP sent.'
+          : 'User registered but failed to send OTP.',
         otpSent: otpResult.success,
         devOtp: otpResult.devOtp, // Only in development mode
       };
@@ -103,7 +117,11 @@ export class AuthService implements IAuthService {
     }
   }
 
-  async verifyOTPAndLogin(phoneNumber: string, otp: string, deviceInfo: DeviceInfo): Promise<LoginResult> {
+  async verifyOTPAndLogin(
+    phoneNumber: string,
+    otp: string,
+    deviceInfo: DeviceInfo
+  ): Promise<LoginResult> {
     try {
       // Format phone number
       const formattedPhone = UserValidator.formatNigerianPhoneNumber(phoneNumber);
@@ -153,7 +171,9 @@ export class AuthService implements IAuthService {
     }
   }
 
-  async refreshToken(refreshToken: string): Promise<{ success: boolean; tokens?: AuthTokens; error?: string }> {
+  async refreshToken(
+    refreshToken: string
+  ): Promise<{ success: boolean; tokens?: AuthTokens; error?: string }> {
     return this.jwtService.refreshTokens(refreshToken);
   }
 

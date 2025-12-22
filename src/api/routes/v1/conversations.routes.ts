@@ -1,13 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ConversationController } from '../../../modules/conversations/controllers';
 import { authMiddleware } from '../../middleware';
-import { getService } from '../../../container';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
 // Lazy getter for Conversation controller
 const getConversationController = (): ConversationController =>
-  getService<ConversationController>('ConversationController');
+  container.resolve<ConversationController>(TOKENS.ConversationController);
 
 /**
  * @swagger

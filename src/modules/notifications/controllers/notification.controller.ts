@@ -1,10 +1,13 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
+import { TOKENS } from '../../../di/tokens';
 import { NotificationService } from '../services';
 import { GetNotificationsQuerySchema } from '../dto';
 import { successResponse } from '../../../shared/utils/response.util';
 
+@injectable()
 export class NotificationController {
-  constructor(private notificationService: NotificationService) { }
+  constructor(@inject(TOKENS.NotificationService) private notificationService: NotificationService) { }
 
   /**
    * GET /api/v1/notifications

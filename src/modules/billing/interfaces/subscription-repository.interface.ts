@@ -1,7 +1,7 @@
 import { Subscription } from '../entities';
 
 /**
- * Subscription repository interface
+ * Subscription repository interface (simplified for MVP)
  */
 export interface ISubscriptionRepository {
   /**
@@ -33,14 +33,4 @@ export interface ISubscriptionRepository {
    * Get or create subscription for user
    */
   getOrCreate(userId: string): Promise<Subscription>;
-
-  /**
-   * Find subscriptions expiring soon
-   */
-  findExpiringSoon(days: number): Promise<Subscription[]>;
-
-  /**
-   * Find subscriptions with past due status
-   */
-  findPastDue(): Promise<Subscription[]>;
 }

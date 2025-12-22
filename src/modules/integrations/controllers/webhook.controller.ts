@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { Platform } from '../enums';
 import { WebhookPayload } from '../interfaces';
@@ -8,6 +9,7 @@ import { InstagramIntegrationService } from '../services/instagram-integration.s
  * Webhook Controller
  * Handles incoming webhooks from WhatsApp and Instagram
  */
+@injectable()
 export class WebhookController {
   /**
    * Handle WhatsApp webhook verification (GET)

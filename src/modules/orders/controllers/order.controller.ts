@@ -1,11 +1,14 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { OrderService } from '../services/order.service';
 import { ListOrdersQueryDto, CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto } from '../dto';
 import { OrderStatus } from '../enums';
 import { AppError } from '../../../api/middleware/error.middleware';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class OrderController {
-  constructor(private orderService: OrderService) { }
+  constructor(@inject(TOKENS.OrderService) private orderService: OrderService) {}
 
   async listOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -18,7 +21,10 @@ export class OrderController {
           startDate: query.startDate ? new Date(query.startDate) : undefined,
           endDate: query.endDate ? new Date(query.endDate) : undefined,
         },
-        { page: parseInt(String(query.page)) || 1, limit: Math.min(parseInt(String(query.limit)) || 20, 100) }
+        {
+          page: parseInt(String(query.page)) || 1,
+          limit: Math.min(parseInt(String(query.limit)) || 20, 100),
+        }
       );
       res.status(200).json({ success: true, ...result });
     } catch (error) {
@@ -37,7 +43,10 @@ export class OrderController {
 
   async getOrdersByCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const orders = await this.orderService.getOrdersByCustomer(req.user!.id, req.params.customerId);
+      const orders = await this.orderService.getOrdersByCustomer(
+        req.user!.id,
+        req.params.customerId
+      );
       res.status(200).json({ success: true, data: orders });
     } catch (error) {
       next(error);
@@ -66,7 +75,11 @@ export class OrderController {
     try {
       const body = req.body as CreateOrderDto;
       if (!body.product?.name || !body.product?.quantity || !body.product?.sellingPrice) {
-        throw new AppError('Product name, quantity, and sellingPrice are required', 400, 'VALIDATION_ERROR');
+        throw new AppError(
+          'Product name, quantity, and sellingPrice are required',
+          400,
+          'VALIDATION_ERROR'
+        );
       }
       if (!body.customer?.name || !body.customer?.contact) {
         throw new AppError('Customer name and contact are required', 400, 'VALIDATION_ERROR');
@@ -81,7 +94,11 @@ export class OrderController {
 
   async updateOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const order = await this.orderService.updateOrder(req.params.id, req.user!.id, req.body as UpdateOrderDto);
+      const order = await this.orderService.updateOrder(
+        req.params.id,
+        req.user!.id,
+        req.body as UpdateOrderDto
+      );
       res.status(200).json({ success: true, data: order });
     } catch (error) {
       next(error);

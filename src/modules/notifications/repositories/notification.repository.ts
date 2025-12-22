@@ -1,4 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, LessThan } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
 import { Notification } from '../entities';
 import {
   INotificationRepository,
@@ -7,10 +9,11 @@ import {
   PaginatedResult,
 } from '../interfaces';
 
+@injectable()
 export class NotificationRepository implements INotificationRepository {
   private repository: Repository<Notification>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(Notification);
   }
 

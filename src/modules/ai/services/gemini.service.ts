@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { GoogleGenerativeAI, GenerativeModel, GenerationConfig } from '@google/generative-ai';
 import { appConfig } from '../../../config/app.config';
 import { AIErrorCode } from '../enums';
@@ -231,6 +232,7 @@ export class AIServiceError extends Error {
  * - Supports text generation and JSON output
  * - Good multilingual support including Nigerian Pidgin
  */
+@injectable()
 export class GeminiService {
   private client: GoogleGenerativeAI | null = null;
   private model: GenerativeModel | null = null;

@@ -1,14 +1,17 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
 import { UserSettings } from '../entities';
 import { ISettingsRepository } from '../interfaces';
 
 /**
  * Settings repository implementation
  */
+@injectable()
 export class SettingsRepository implements ISettingsRepository {
   private repository: Repository<UserSettings>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(UserSettings);
   }
 

@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { appConfig } from '../../../config/app.config';
 
 /**
@@ -119,6 +120,7 @@ export interface PaystackPlanData {
 /**
  * Paystack service for payment processing
  */
+@injectable()
 export class PaystackService {
   private readonly baseUrl = 'https://api.paystack.co';
   private readonly secretKey: string;

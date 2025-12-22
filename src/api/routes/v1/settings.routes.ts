@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SettingsController } from '../../../modules/settings/controllers';
 import { authMiddleware } from '../../middleware';
-import { getService } from '../../../container';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
 const getSettingsController = (): SettingsController =>
-  getService<SettingsController>('SettingsController');
+  container.resolve<SettingsController>(TOKENS.SettingsController);
 
 /**
  * @swagger

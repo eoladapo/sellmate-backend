@@ -4,7 +4,10 @@ export interface IOAuthTokenRepository {
   /**
    * Find OAuth token by user ID and platform
    */
-  findByUserAndPlatform(userId: string, platform: 'whatsapp' | 'instagram'): Promise<OAuthToken | null>;
+  findByUserAndPlatform(
+    userId: string,
+    platform: 'whatsapp' | 'instagram'
+  ): Promise<OAuthToken | null>;
 
   /**
    * Create or update OAuth token

@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { CustomerController } from '../../../modules/customers/controllers';
 import { authMiddleware } from '../../middleware';
-import { getService } from '../../../container';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
 const getCustomerController = (): CustomerController =>
-  getService<CustomerController>('CustomerController');
+  container.resolve<CustomerController>(TOKENS.CustomerController);
 
 /**
  * @swagger

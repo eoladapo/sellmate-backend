@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, Brackets } from 'typeorm';
 import { Customer } from '../entities';
 import {
@@ -7,11 +8,13 @@ import {
   PaginatedResult,
 } from '../interfaces';
 import { Platform } from '../../integrations/enums';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class CustomerRepository implements ICustomerRepository {
   private repository: Repository<Customer>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(Customer);
   }
 

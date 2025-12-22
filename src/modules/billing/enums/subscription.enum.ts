@@ -8,34 +8,17 @@ export enum SubscriptionPlan {
 }
 
 /**
- * Subscription status
+ * Subscription status (simplified for MVP)
+ * - TRIAL: Initial trial period
+ * - ACTIVE: Paid and active subscription
+ * - CANCELLED: User cancelled, access until period end
+ * - PAST_DUE: Payment failed, needs attention
  */
 export enum SubscriptionStatus {
+  TRIAL = 'trial',
   ACTIVE = 'active',
-  INACTIVE = 'inactive',
   CANCELLED = 'cancelled',
   PAST_DUE = 'past_due',
-  TRIAL = 'trial',
-  EXPIRED = 'expired',
-}
-
-/**
- * Payment method types
- */
-export enum PaymentMethodType {
-  CARD = 'card',
-  BANK_TRANSFER = 'bank_transfer',
-  MOBILE_MONEY = 'mobile_money',
-}
-
-/**
- * Payment status
- */
-export enum PaymentStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  REFUNDED = 'refunded',
 }
 
 /**

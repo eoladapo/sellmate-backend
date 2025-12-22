@@ -1,11 +1,14 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { IUserRepository } from '../interfaces/user-repository.interface';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class UserRepository implements IUserRepository {
   private repository: Repository<User>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(User);
   }
 

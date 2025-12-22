@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
+import { injectable, inject } from 'tsyringe';
 import { IAuthService } from '../interfaces/auth-service.interface';
 import { DeviceInfo } from '../interfaces/device-info.interface';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class AuthController {
-  constructor(private authService: IAuthService) { }
+  constructor(@inject(TOKENS.AuthService) private authService: IAuthService) {}
 
   /**
    * Register a new user
@@ -22,11 +25,7 @@ export class AuthController {
         return;
       }
 
-      const result = await this.authService.register(
-        phoneNumber,
-        businessName,
-        email
-      );
+      const result = await this.authService.register(phoneNumber, businessName, email);
 
       if (result.success) {
         res.status(201).json({
@@ -78,11 +77,7 @@ export class AuthController {
         deviceType: this.detectDeviceType(userAgent),
       };
 
-      const result = await this.authService.verifyOTPAndLogin(
-        phoneNumber,
-        otp,
-        deviceInfo
-      );
+      const result = await this.authService.verifyOTPAndLogin(phoneNumber, otp, deviceInfo);
 
       if (result.success) {
         res.json({

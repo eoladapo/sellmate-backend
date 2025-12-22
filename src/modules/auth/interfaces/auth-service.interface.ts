@@ -29,7 +29,9 @@ export interface IAuthService {
   register(phoneNumber: string, businessName: string, email?: string): Promise<RegisterResult>;
   sendLoginOTP(phoneNumber: string): Promise<SendOTPResult>;
   verifyOTPAndLogin(phoneNumber: string, otp: string, deviceInfo: DeviceInfo): Promise<LoginResult>;
-  refreshToken(refreshToken: string): Promise<{ success: boolean; tokens?: AuthTokens; error?: string }>;
+  refreshToken(
+    refreshToken: string
+  ): Promise<{ success: boolean; tokens?: AuthTokens; error?: string }>;
   logout(refreshToken: string): Promise<boolean>;
   logoutAllDevices(userId: string): Promise<number>;
 }

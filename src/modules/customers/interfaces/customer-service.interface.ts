@@ -1,5 +1,9 @@
 import { Customer, CustomerOrderHistory } from '../entities';
-import { CustomerFilters, PaginationOptions, PaginatedResult } from './customer-repository.interface';
+import {
+  CustomerFilters,
+  PaginationOptions,
+  PaginatedResult,
+} from './customer-repository.interface';
 import { Platform } from '../../integrations/enums';
 
 export interface CreateCustomerRequest {
@@ -36,7 +40,11 @@ export interface ICustomerService {
   ): Promise<PaginatedResult<Customer>>;
   getCustomerById(customerId: string, userId: string): Promise<Customer>;
   createCustomer(request: CreateCustomerRequest): Promise<Customer>;
-  updateCustomer(customerId: string, userId: string, updates: UpdateCustomerRequest): Promise<Customer>;
+  updateCustomer(
+    customerId: string,
+    userId: string,
+    updates: UpdateCustomerRequest
+  ): Promise<Customer>;
   deleteCustomer(customerId: string, userId: string): Promise<void>;
   getCustomerInsights(customerId: string, userId: string): Promise<CustomerInsights>;
   findOrCreateByPlatform(

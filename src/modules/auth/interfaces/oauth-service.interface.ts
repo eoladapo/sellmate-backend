@@ -61,7 +61,10 @@ export interface IOAuthService {
   /**
    * Refresh OAuth access token
    */
-  refreshToken(platform: 'whatsapp' | 'instagram', refreshToken: string): Promise<OAuthCallbackResult>;
+  refreshToken(
+    platform: 'whatsapp' | 'instagram',
+    refreshToken: string
+  ): Promise<OAuthCallbackResult>;
 
   /**
    * Revoke OAuth tokens

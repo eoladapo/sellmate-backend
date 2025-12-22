@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { Container } from 'typedi';
 import { IntegrationController } from '../../../modules/integrations/controllers';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { validateBody } from '../../middleware/validation.middleware';
 import { connectIntegrationSchema, triggerSyncSchema } from '../../../modules/integrations/dto';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ const router = Router();
  * Get integration controller from DI container
  */
 const getController = (): IntegrationController => {
-  return Container.get<IntegrationController>('IntegrationController');
+  return container.resolve<IntegrationController>(TOKENS.IntegrationController);
 };
 
 /**

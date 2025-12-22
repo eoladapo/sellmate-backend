@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Message } from '../entities';
 import { ConversationRepository } from '../repositories/conversation.repository';
 import { MessageRepository } from '../repositories/message.repository';
@@ -11,6 +12,7 @@ import {
 } from '../interfaces';
 import { Platform, MessageType, MessageStatus, ConnectionStatus } from '../../integrations/enums';
 import { MessageSender, EntryMode } from '../enums';
+import { TOKENS } from '../../../di/tokens';
 
 /**
  * Scheduled sync job tracking
@@ -25,14 +27,16 @@ interface ScheduledJob {
  * Message Sync Service
  * Handles synchronization of messages from external platforms
  */
+@injectable()
 export class MessageSyncService implements IMessageSyncService {
   private scheduledJobs: Map<string, ScheduledJob> = new Map();
 
   constructor(
-    private conversationRepository: ConversationRepository,
-    private messageRepository: MessageRepository,
+    @inject(TOKENS.ConversationRepository) private conversationRepository: ConversationRepository,
+    @inject(TOKENS.MessageRepository) private messageRepository: MessageRepository,
+    @inject(TOKENS.IntegrationConnectionRepository)
     private integrationConnectionRepository: IntegrationConnectionRepository
-  ) { }
+  ) {}
 
   /**
    * Sync messages for a specific platform
@@ -135,10 +139,7 @@ export class MessageSyncService implements IMessageSyncService {
 
     for (const incoming of messages) {
       // Check for duplicate
-      const isDuplicate = await this.isDuplicateMessage(
-        platform,
-        incoming.platformMessageId
-      );
+      const isDuplicate = await this.isDuplicateMessage(platform, incoming.platformMessageId);
 
       if (isDuplicate) {
         continue;
@@ -205,9 +206,7 @@ export class MessageSyncService implements IMessageSyncService {
 
     // Update conversation last messages and unread counts
     for (const conversationId of conversationsToUpdate) {
-      const latestMessage = await this.messageRepository.findLatestByConversation(
-        conversationId
-      );
+      const latestMessage = await this.messageRepository.findLatestByConversation(conversationId);
 
       if (latestMessage) {
         await this.conversationRepository.updateLastMessage(
@@ -240,10 +239,7 @@ export class MessageSyncService implements IMessageSyncService {
   /**
    * Check if a message is a duplicate
    */
-  async isDuplicateMessage(
-    platform: Platform,
-    platformMessageId: string
-  ): Promise<boolean> {
+  async isDuplicateMessage(platform: Platform, platformMessageId: string): Promise<boolean> {
     return this.messageRepository.existsByPlatformMessageId(platform, platformMessageId);
   }
 

@@ -1,4 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, Between } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
 import { BusinessMetrics } from '../entities';
 import { DateRange } from '../interfaces';
 
@@ -8,10 +10,11 @@ export interface IAnalyticsRepository {
   update(id: string, data: Partial<BusinessMetrics>): Promise<BusinessMetrics>;
 }
 
+@injectable()
 export class AnalyticsRepository implements IAnalyticsRepository {
   private repository: Repository<BusinessMetrics>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(BusinessMetrics);
   }
 

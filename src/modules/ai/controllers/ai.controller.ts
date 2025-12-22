@@ -1,4 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
+import { TOKENS } from '../../../di/tokens';
 import { AIService } from '../services/ai.service';
 import {
   analyzeMessageSchema,
@@ -11,8 +13,9 @@ import { ResponseTone, ResponseLanguage } from '../enums';
  * AI Controller
  * Handles AI-related API endpoints
  */
+@injectable()
 export class AIController {
-  constructor(private aiService: AIService) { }
+  constructor(@inject(TOKENS.AIService) private aiService: AIService) { }
 
   /**
    * POST /api/v1/ai/analyze

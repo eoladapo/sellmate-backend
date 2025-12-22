@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, DeepPartial } from 'typeorm';
 import { Message, MessageAIAnalysis } from '../entities';
 import {
@@ -7,15 +8,17 @@ import {
   PaginatedResult,
 } from '../interfaces';
 import { Platform, MessageStatus } from '../../integrations/enums';
+import { TOKENS } from '../../../di/tokens';
 
 /**
  * Message Repository
  * Handles database operations for messages
  */
+@injectable()
 export class MessageRepository implements IMessageRepository {
   private repository: Repository<Message>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(Message);
   }
 
@@ -105,10 +108,7 @@ export class MessageRepository implements IMessageRepository {
     };
   }
 
-  async findRecentByConversation(
-    conversationId: string,
-    limit: number = 50
-  ): Promise<Message[]> {
+  async findRecentByConversation(conversationId: string, limit: number = 50): Promise<Message[]> {
     return this.repository.find({
       where: { conversationId },
       order: { timestamp: 'DESC' },
@@ -170,10 +170,7 @@ export class MessageRepository implements IMessageRepository {
     });
   }
 
-  async existsByPlatformMessageId(
-    platform: Platform,
-    platformMessageId: string
-  ): Promise<boolean> {
+  async existsByPlatformMessageId(platform: Platform, platformMessageId: string): Promise<boolean> {
     const count = await this.repository.count({
       where: { platform, platformMessageId },
     });
@@ -187,11 +184,7 @@ export class MessageRepository implements IMessageRepository {
     });
   }
 
-  async findByUserAndDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<Message[]> {
+  async findByUserAndDateRange(userId: string, startDate: Date, endDate: Date): Promise<Message[]> {
     return this.repository
       .createQueryBuilder('message')
       .innerJoin('message.conversation', 'conversation')

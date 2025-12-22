@@ -1,3 +1,5 @@
+import { injectable, inject } from 'tsyringe';
+import { TOKENS } from '../../../di/tokens';
 import { Notification } from '../entities';
 import { NotificationRepository } from '../repositories';
 import {
@@ -16,10 +18,10 @@ import {
 import { getSocketService } from '../../../shared/services/socket.service';
 import { AppError } from '../../../api/middleware/error.middleware';
 
+@injectable()
 export class NotificationService implements INotificationService {
   constructor(
-    private notificationRepository: NotificationRepository,
-    private smsService?: { sendSMS: (to: string, message: string) => Promise<boolean> }
+    @inject(TOKENS.NotificationRepository) private notificationRepository: NotificationRepository
   ) { }
 
   async getNotifications(
@@ -148,11 +150,7 @@ export class NotificationService implements INotificationService {
    * Send SMS notification
    */
   private async sendSMSNotification(notification: Notification): Promise<void> {
-    if (!this.smsService) {
-      console.warn('SMS service not configured');
-      return;
-    }
-
+    // SMS notifications are not yet implemented
     // Get user's phone number (would need to be passed or fetched)
     // For now, we'll skip SMS if no phone number is available
     console.log(`SMS notification would be sent for notification ${notification.id}`);

@@ -1,10 +1,13 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { CustomerService } from '../services/customer.service';
 import { ListCustomersQueryDto, CreateCustomerDto, UpdateCustomerDto } from '../dto';
 import { AppError } from '../../../api/middleware/error.middleware';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class CustomerController {
-  constructor(private customerService: CustomerService) { }
+  constructor(@inject(TOKENS.CustomerService) private customerService: CustomerService) {}
 
   async listCustomers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -14,7 +17,10 @@ export class CustomerController {
       const result = await this.customerService.getCustomers(
         userId,
         { platform: query.platform, search: query.search },
-        { page: parseInt(String(query.page)) || 1, limit: Math.min(parseInt(String(query.limit)) || 20, 100) }
+        {
+          page: parseInt(String(query.page)) || 1,
+          limit: Math.min(parseInt(String(query.limit)) || 20, 100),
+        }
       );
       res.status(200).json({ success: true, ...result });
     } catch (error) {

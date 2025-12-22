@@ -1,30 +1,53 @@
-import {
-  Subscription,
-  PaymentMethod,
-  UsageLimits,
-  CurrentUsage,
-  PLAN_LIMITS,
-  PLAN_PRICING,
-} from '../entities';
+import { injectable, inject } from 'tsyringe';
+import { TOKENS } from '../../../di/tokens';
+import { Subscription, PLAN_PRICING } from '../entities';
 import { SubscriptionRepository } from '../repositories';
 import {
   ISubscriptionService,
-  AddPaymentMethodRequest,
-  UpgradeSubscriptionRequest,
+  ChangePlanRequest,
   SubscriptionSummary,
-  UsageCheckResult,
+  PaystackAuthorization,
 } from '../interfaces';
 import {
   SubscriptionPlan,
   SubscriptionStatus,
   BillingCycle,
 } from '../enums';
+import { PaystackService } from './paystack.service';
 
 /**
- * Subscription service implementation
+ * Initialize payment response
  */
+export interface InitializePaymentResponse {
+  authorizationUrl: string;
+  accessCode: string;
+  reference: string;
+}
+
+/**
+ * Verify payment result
+ */
+export interface VerifyPaymentResult {
+  success: boolean;
+  message: string;
+  authorizationCode?: string;
+  customerCode?: string;
+}
+
+/**
+ * Simplified subscription service for MVP
+ * - Removed usage tracking (deferred to post-MVP)
+ * - Removed payment method management (Paystack handles card storage)
+ * - Consolidated upgrade/downgrade into single changePlan method
+ * - Merged essential Paystack methods from BillingService
+ */
+@injectable()
 export class SubscriptionService implements ISubscriptionService {
-  constructor(private subscriptionRepository: SubscriptionRepository) { }
+  private paystackService: PaystackService;
+
+  constructor(@inject(TOKENS.SubscriptionRepository) private subscriptionRepository: SubscriptionRepository) {
+    this.paystackService = new PaystackService();
+  }
 
   async getSubscription(userId: string): Promise<Subscription> {
     return this.subscriptionRepository.getOrCreate(userId);
@@ -56,9 +79,6 @@ export class SubscriptionService implements ISubscriptionService {
       trialEnd: subscription.trialEnd,
       amount: subscription.amount,
       currency: subscription.currency,
-      usageLimits: subscription.usageLimits,
-      currentUsage: subscription.currentUsage,
-      paymentMethods: subscription.paymentMethods,
       nextPaymentDate: subscription.nextPaymentDate,
       daysUntilRenewal,
       isTrialActive,
@@ -75,86 +95,59 @@ export class SubscriptionService implements ISubscriptionService {
     return this.subscriptionRepository.create(userId);
   }
 
-  async upgradeSubscription(
+  /**
+   * Change subscription plan (handles both upgrades and downgrades)
+   * - Upgrades: Take effect immediately with new billing period
+   * - Downgrades: Scheduled to take effect at end of current billing period
+   */
+  async changePlan(
     userId: string,
-    request: UpgradeSubscriptionRequest
+    request: ChangePlanRequest
   ): Promise<Subscription> {
     const subscription = await this.subscriptionRepository.getOrCreate(userId);
 
-    // Validate upgrade path
+    // Validate plan change - cannot change to same plan
+    if (request.plan === subscription.plan) {
+      throw new Error('Cannot change to the same plan');
+    }
+
     const planOrder = [SubscriptionPlan.STARTER, SubscriptionPlan.PROFESSIONAL, SubscriptionPlan.BUSINESS];
     const currentIndex = planOrder.indexOf(subscription.plan);
     const newIndex = planOrder.indexOf(request.plan);
-
-    if (newIndex <= currentIndex) {
-      throw new Error('Cannot upgrade to the same or lower plan. Use downgrade instead.');
-    }
+    const isUpgrade = newIndex > currentIndex;
 
     const billingCycle = request.billingCycle || subscription.billingCycle;
     const newAmount = this.getPlanPricing(request.plan, billingCycle);
-    const newLimits = this.getPlanLimits(request.plan);
 
-    const now = new Date();
-    const periodEnd = new Date(now);
-    if (billingCycle === BillingCycle.YEARLY) {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    if (isUpgrade) {
+      // Upgrades take effect immediately
+      const now = new Date();
+      const periodEnd = new Date(now);
+      if (billingCycle === BillingCycle.YEARLY) {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      } else {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      }
+
+      return this.subscriptionRepository.update(userId, {
+        plan: request.plan,
+        billingCycle,
+        status: SubscriptionStatus.ACTIVE,
+        amount: newAmount,
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        nextPaymentDate: periodEnd,
+        trialEnd: undefined, // End trial on upgrade
+      });
     } else {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      // Downgrades take effect at end of current period
+      // Only update plan, billingCycle, and amount - keep current period unchanged
+      return this.subscriptionRepository.update(userId, {
+        plan: request.plan,
+        billingCycle,
+        amount: newAmount,
+      });
     }
-
-    return this.subscriptionRepository.update(userId, {
-      plan: request.plan,
-      billingCycle,
-      status: SubscriptionStatus.ACTIVE,
-      usageLimits: newLimits,
-      amount: newAmount,
-      currentPeriodStart: now,
-      currentPeriodEnd: periodEnd,
-      nextPaymentDate: periodEnd,
-      trialEnd: undefined, // End trial on upgrade
-    });
-  }
-
-  async downgradeSubscription(
-    userId: string,
-    request: UpgradeSubscriptionRequest
-  ): Promise<Subscription> {
-    const subscription = await this.subscriptionRepository.getOrCreate(userId);
-
-    // Validate downgrade path
-    const planOrder = [SubscriptionPlan.STARTER, SubscriptionPlan.PROFESSIONAL, SubscriptionPlan.BUSINESS];
-    const currentIndex = planOrder.indexOf(subscription.plan);
-    const newIndex = planOrder.indexOf(request.plan);
-
-    if (newIndex >= currentIndex) {
-      throw new Error('Cannot downgrade to the same or higher plan. Use upgrade instead.');
-    }
-
-    // Check if current usage exceeds new plan limits
-    const newLimits = this.getPlanLimits(request.plan);
-    const usage = subscription.currentUsage;
-
-    if (newLimits.maxConversations !== -1 && usage.conversations > newLimits.maxConversations) {
-      throw new Error(`Current conversation count (${usage.conversations}) exceeds new plan limit (${newLimits.maxConversations})`);
-    }
-    if (newLimits.maxOrders !== -1 && usage.orders > newLimits.maxOrders) {
-      throw new Error(`Current order count (${usage.orders}) exceeds new plan limit (${newLimits.maxOrders})`);
-    }
-    if (newLimits.maxCustomers !== -1 && usage.customers > newLimits.maxCustomers) {
-      throw new Error(`Current customer count (${usage.customers}) exceeds new plan limit (${newLimits.maxCustomers})`);
-    }
-
-    const billingCycle = request.billingCycle || subscription.billingCycle;
-    const newAmount = this.getPlanPricing(request.plan, billingCycle);
-
-    // Downgrade takes effect at end of current period
-    return this.subscriptionRepository.update(userId, {
-      plan: request.plan,
-      billingCycle,
-      usageLimits: newLimits,
-      amount: newAmount,
-      // Keep current period, change takes effect at renewal
-    });
   }
 
   async cancelSubscription(userId: string): Promise<Subscription> {
@@ -194,141 +187,68 @@ export class SubscriptionService implements ISubscriptionService {
     });
   }
 
-  async addPaymentMethod(
+  /**
+   * Activate subscription after successful Paystack payment
+   * Stores authorization code for recurring charges
+   */
+  async activateAfterPayment(
     userId: string,
-    request: AddPaymentMethodRequest
-  ): Promise<PaymentMethod[]> {
+    paystackAuth: PaystackAuthorization
+  ): Promise<Subscription> {
     const subscription = await this.subscriptionRepository.getOrCreate(userId);
-    const paymentMethods = [...subscription.paymentMethods];
 
-    const newMethod: PaymentMethod = {
-      type: request.type,
-      last4: request.last4,
-      expiryMonth: request.expiryMonth,
-      expiryYear: request.expiryYear,
-      bankName: request.bankName,
-      accountLast4: request.accountLast4,
-      mobileNumber: request.mobileNumber,
-      provider: request.provider,
-      isDefault: request.setAsDefault || paymentMethods.length === 0,
-    };
-
-    // If setting as default, unset other defaults
-    if (newMethod.isDefault) {
-      paymentMethods.forEach((pm) => (pm.isDefault = false));
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (subscription.billingCycle === BillingCycle.YEARLY) {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
     }
 
-    paymentMethods.push(newMethod);
-
-    await this.subscriptionRepository.update(userId, { paymentMethods });
-    return paymentMethods;
+    return this.subscriptionRepository.update(userId, {
+      status: SubscriptionStatus.ACTIVE,
+      paystackAuthorizationCode: paystackAuth.authorizationCode,
+      paystackCustomerCode: paystackAuth.customerCode,
+      lastPaymentDate: now,
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
+      nextPaymentDate: periodEnd,
+      trialEnd: undefined, // End trial on payment
+    });
   }
 
-  async removePaymentMethod(userId: string, index: number): Promise<PaymentMethod[]> {
+  /**
+   * Handle successful payment webhook from Paystack
+   * Updates subscription period and last payment date
+   */
+  async handlePaymentSuccess(userId: string): Promise<Subscription> {
     const subscription = await this.subscriptionRepository.getOrCreate(userId);
-    const paymentMethods = [...subscription.paymentMethods];
 
-    if (index < 0 || index >= paymentMethods.length) {
-      throw new Error('Invalid payment method index');
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (subscription.billingCycle === BillingCycle.YEARLY) {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
     }
 
-    const wasDefault = paymentMethods[index].isDefault;
-    paymentMethods.splice(index, 1);
-
-    // If removed method was default, set first remaining as default
-    if (wasDefault && paymentMethods.length > 0) {
-      paymentMethods[0].isDefault = true;
-    }
-
-    await this.subscriptionRepository.update(userId, { paymentMethods });
-    return paymentMethods;
+    return this.subscriptionRepository.update(userId, {
+      status: SubscriptionStatus.ACTIVE,
+      lastPaymentDate: now,
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
+      nextPaymentDate: periodEnd,
+    });
   }
 
-  async setDefaultPaymentMethod(userId: string, index: number): Promise<PaymentMethod[]> {
-    const subscription = await this.subscriptionRepository.getOrCreate(userId);
-    const paymentMethods = [...subscription.paymentMethods];
-
-    if (index < 0 || index >= paymentMethods.length) {
-      throw new Error('Invalid payment method index');
-    }
-
-    paymentMethods.forEach((pm, i) => (pm.isDefault = i === index));
-
-    await this.subscriptionRepository.update(userId, { paymentMethods });
-    return paymentMethods;
-  }
-
-  async checkUsageLimit(
-    userId: string,
-    resource: keyof UsageLimits
-  ): Promise<UsageCheckResult> {
-    const subscription = await this.subscriptionRepository.getOrCreate(userId);
-    const limit = subscription.usageLimits[resource];
-
-    // Map resource to usage field
-    const usageMap: Record<keyof UsageLimits, keyof CurrentUsage> = {
-      maxConversations: 'conversations',
-      maxOrders: 'orders',
-      maxCustomers: 'customers',
-      maxIntegrations: 'integrations',
-      aiRequestsPerMonth: 'aiRequestsThisMonth',
-      storageGB: 'storageUsedGB',
-    };
-
-    const usageField = usageMap[resource];
-    const currentValue = subscription.currentUsage[usageField] as number;
-
-    // -1 means unlimited
-    if (limit === -1) {
-      return {
-        allowed: true,
-        currentValue,
-        limit: -1,
-        percentUsed: 0,
-        message: 'Unlimited usage',
-      };
-    }
-
-    const percentUsed = Math.round((currentValue / limit) * 100);
-    const allowed = currentValue < limit;
-
-    return {
-      allowed,
-      currentValue,
-      limit,
-      percentUsed,
-      message: allowed
-        ? `${percentUsed}% of limit used`
-        : `Limit reached. Upgrade your plan for more ${resource}.`,
-    };
-  }
-
-  async incrementUsage(
-    userId: string,
-    resource: keyof CurrentUsage,
-    amount: number = 1
-  ): Promise<CurrentUsage> {
-    const subscription = await this.subscriptionRepository.getOrCreate(userId);
-    const currentUsage = { ...subscription.currentUsage };
-
-    if (typeof currentUsage[resource] === 'number') {
-      (currentUsage[resource] as number) += amount;
-    }
-
-    await this.subscriptionRepository.update(userId, { currentUsage });
-    return currentUsage;
-  }
-
-  async resetMonthlyUsage(userId: string): Promise<CurrentUsage> {
-    const subscription = await this.subscriptionRepository.getOrCreate(userId);
-    const currentUsage = {
-      ...subscription.currentUsage,
-      aiRequestsThisMonth: 0,
-      lastResetDate: new Date(),
-    };
-
-    await this.subscriptionRepository.update(userId, { currentUsage });
-    return currentUsage;
+  /**
+   * Handle failed payment webhook from Paystack
+   * Marks subscription as past_due
+   */
+  async handlePaymentFailure(userId: string): Promise<Subscription> {
+    return this.subscriptionRepository.update(userId, {
+      status: SubscriptionStatus.PAST_DUE,
+    });
   }
 
   getPlanPricing(plan: SubscriptionPlan, billingCycle: BillingCycle): number {
@@ -336,7 +256,125 @@ export class SubscriptionService implements ISubscriptionService {
     return billingCycle === BillingCycle.YEARLY ? pricing.yearly : pricing.monthly;
   }
 
-  getPlanLimits(plan: SubscriptionPlan): UsageLimits {
-    return { ...PLAN_LIMITS[plan] };
+  // ============================================
+  // Paystack Integration Methods (merged from BillingService)
+  // ============================================
+
+  /**
+   * Initialize a payment transaction (redirects user to Paystack)
+   */
+  async initializePayment(
+    userId: string,
+    email: string,
+    amount: number,
+    description: string,
+    callbackUrl?: string
+  ): Promise<InitializePaymentResponse> {
+    const reference = this.paystackService.generateReference('SM');
+
+    const result = await this.paystackService.initializeTransaction(
+      email,
+      amount,
+      reference,
+      {
+        userId,
+        description,
+        type: 'subscription_payment',
+      },
+      callbackUrl
+    );
+
+    return {
+      authorizationUrl: result.authorization_url,
+      accessCode: result.access_code,
+      reference: result.reference,
+    };
+  }
+
+  /**
+   * Verify a payment after callback from Paystack
+   * Returns authorization data for storing if payment successful
+   */
+  async verifyPayment(reference: string): Promise<VerifyPaymentResult> {
+    try {
+      const verification = await this.paystackService.verifyTransaction(reference);
+
+      if (verification.status === 'success') {
+        const userId = verification.metadata?.userId as string;
+
+        if (userId && verification.authorization.reusable) {
+          // Activate subscription with authorization
+          await this.activateAfterPayment(userId, {
+            authorizationCode: verification.authorization.authorization_code,
+            customerCode: verification.customer.customer_code,
+          });
+        }
+
+        return {
+          success: true,
+          message: 'Payment verified successfully',
+          authorizationCode: verification.authorization.authorization_code,
+          customerCode: verification.customer.customer_code,
+        };
+      } else {
+        const userId = verification.metadata?.userId as string;
+        if (userId) {
+          await this.handlePaymentFailure(userId);
+        }
+
+        return {
+          success: false,
+          message: verification.gateway_response || 'Payment verification failed',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Payment verification failed',
+      };
+    }
+  }
+
+  /**
+   * Verify Paystack webhook signature
+   */
+  verifyWebhookSignature(payload: string, signature: string): boolean {
+    return this.paystackService.verifyWebhookSignature(payload, signature);
+  }
+
+  /**
+   * Handle Paystack webhook events
+   */
+  async handleWebhook(event: string, data: Record<string, unknown>): Promise<void> {
+    switch (event) {
+      case 'charge.success':
+        await this.handleChargeSuccessWebhook(data);
+        break;
+      case 'charge.failed':
+        await this.handleChargeFailedWebhook(data);
+        break;
+      default:
+        console.log(`Unhandled Paystack webhook event: ${event}`);
+    }
+  }
+
+  // Private webhook handlers
+
+  private async handleChargeSuccessWebhook(data: Record<string, unknown>): Promise<void> {
+    const metadata = data.metadata as Record<string, unknown> | undefined;
+    const userId = metadata?.userId as string;
+
+    if (userId) {
+      await this.handlePaymentSuccess(userId);
+    }
+  }
+
+  private async handleChargeFailedWebhook(data: Record<string, unknown>): Promise<void> {
+    const metadata = data.metadata as Record<string, unknown> | undefined;
+    const userId = metadata?.userId as string;
+
+    if (userId) {
+      await this.handlePaymentFailure(userId);
+    }
   }
 }

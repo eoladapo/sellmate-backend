@@ -1,4 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { DataSource, Between } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
 import { Order } from '../../orders/entities';
 import { Customer } from '../../customers/entities';
 import { Conversation } from '../../conversations/entities';
@@ -18,8 +20,9 @@ import {
   ProfitMetrics,
 } from '../interfaces';
 
+@injectable()
 export class AnalyticsService implements IAnalyticsService {
-  constructor(private dataSource: DataSource) { }
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) { }
 
   async getDashboardMetrics(userId: string, dateRange: DateRange): Promise<DashboardMetrics> {
     const [revenue, orders, customers, profit] = await Promise.all([

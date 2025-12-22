@@ -1,12 +1,23 @@
-import { Repository, DataSource, Between, MoreThanOrEqual, LessThanOrEqual, In, LessThan } from 'typeorm';
+import { injectable, inject } from 'tsyringe';
+import {
+  Repository,
+  DataSource,
+  Between,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+  In,
+  LessThan,
+} from 'typeorm';
 import { Order } from '../entities';
 import { OrderStatus } from '../enums';
 import { IOrderRepository, OrderFilters, PaginationOptions, PaginatedResult } from '../interfaces';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class OrderRepository implements IOrderRepository {
   private repository: Repository<Order>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(Order);
   }
 

@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { NotificationController } from '../../../modules/notifications/controllers';
 import { authMiddleware } from '../../middleware';
-import { getService } from '../../../container';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
 const getNotificationController = (): NotificationController =>
-  getService<NotificationController>('NotificationController');
+  container.resolve<NotificationController>(TOKENS.NotificationController);
 
 /**
  * @swagger

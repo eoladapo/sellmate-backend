@@ -1,4 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, DeepPartial } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
 import { IntegrationConnection, IntegrationConnectionSettings } from '../entities';
 import { Platform, ConnectionStatus } from '../enums';
 
@@ -6,10 +8,11 @@ import { Platform, ConnectionStatus } from '../enums';
  * Integration Connection Repository
  * Handles database operations for integration connections
  */
+@injectable()
 export class IntegrationConnectionRepository {
   private repository: Repository<IntegrationConnection>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(IntegrationConnection);
   }
 

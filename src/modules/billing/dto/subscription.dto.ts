@@ -2,70 +2,35 @@ import { z } from 'zod';
 import {
   SubscriptionPlan,
   BillingCycle,
-  PaymentMethodType,
 } from '../enums';
 
 /**
- * Add payment method request schema
+ * Change plan request schema
+ * Used for both upgrades and downgrades - the service determines which based on plan comparison
+ * Requirements: 2.1, 2.2
  */
-export const addPaymentMethodSchema = z.object({
-  type: z.nativeEnum(PaymentMethodType),
-  last4: z.string().length(4).optional(),
-  expiryMonth: z.number().min(1).max(12).optional(),
-  expiryYear: z.number().min(2024).max(2050).optional(),
-  bankName: z.string().max(100).optional(),
-  accountLast4: z.string().length(4).optional(),
-  mobileNumber: z.string().max(20).optional(),
-  provider: z.string().max(50).optional(),
-  setAsDefault: z.boolean().optional(),
-});
-
-export type AddPaymentMethodDto = z.infer<typeof addPaymentMethodSchema>;
-
-/**
- * Upgrade subscription request schema
- */
-export const upgradeSubscriptionSchema = z.object({
+export const changePlanSchema = z.object({
   plan: z.nativeEnum(SubscriptionPlan),
   billingCycle: z.nativeEnum(BillingCycle).optional(),
 });
 
-export type UpgradeSubscriptionDto = z.infer<typeof upgradeSubscriptionSchema>;
+export type ChangePlanDto = z.infer<typeof changePlanSchema>;
 
 /**
- * Downgrade subscription request schema
+ * Initialize payment request schema
  */
-export const downgradeSubscriptionSchema = z.object({
-  plan: z.nativeEnum(SubscriptionPlan),
-  billingCycle: z.nativeEnum(BillingCycle).optional(),
+export const initializePaymentSchema = z.object({
+  email: z.string().email(),
+  callbackUrl: z.string().url().optional(),
 });
 
-export type DowngradeSubscriptionDto = z.infer<typeof downgradeSubscriptionSchema>;
+export type InitializePaymentDto = z.infer<typeof initializePaymentSchema>;
 
 /**
- * Set default payment method request schema
+ * Verify payment request schema
  */
-export const setDefaultPaymentMethodSchema = z.object({
-  index: z.number().min(0),
+export const verifyPaymentSchema = z.object({
+  reference: z.string().min(1),
 });
 
-export type SetDefaultPaymentMethodDto = z.infer<typeof setDefaultPaymentMethodSchema>;
-
-/**
- * Remove payment method request schema
- */
-export const removePaymentMethodSchema = z.object({
-  index: z.number().min(0),
-});
-
-export type RemovePaymentMethodDto = z.infer<typeof removePaymentMethodSchema>;
-
-/**
- * Calculate plan change request schema
- */
-export const calculatePlanChangeSchema = z.object({
-  plan: z.nativeEnum(SubscriptionPlan),
-  billingCycle: z.nativeEnum(BillingCycle).optional(),
-});
-
-export type CalculatePlanChangeDto = z.infer<typeof calculatePlanChangeSchema>;
+export type VerifyPaymentDto = z.infer<typeof verifyPaymentSchema>;

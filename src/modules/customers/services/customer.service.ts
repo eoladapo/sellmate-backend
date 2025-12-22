@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Customer, CustomerPlatformInfo } from '../entities';
 import { CustomerRepository } from '../repositories/customer.repository';
 import {
@@ -12,9 +13,11 @@ import {
 import { CustomerStatus } from '../enums';
 import { Platform } from '../../integrations/enums';
 import { AppError } from '../../../api/middleware/error.middleware';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class CustomerService implements ICustomerService {
-  constructor(private customerRepository: CustomerRepository) { }
+  constructor(@inject(TOKENS.CustomerRepository) private customerRepository: CustomerRepository) {}
 
   async getCustomers(
     userId: string,

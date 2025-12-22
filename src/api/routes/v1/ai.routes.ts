@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { Container } from 'typedi';
 import { AIController } from '../../../modules/ai/controllers/ai.controller';
 import { authMiddleware } from '../../middleware/auth.middleware';
+import { container, TOKENS } from '../../../di';
 
 const router = Router();
 
@@ -9,7 +9,7 @@ const router = Router();
  * Get AI controller from container
  */
 const getController = (): AIController => {
-  return Container.get<AIController>('AIController');
+  return container.resolve<AIController>(TOKENS.AIController);
 };
 
 /**

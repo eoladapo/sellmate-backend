@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { ConversationService } from '../services/conversation.service';
 import { MessageSyncService } from '../services/message-sync.service';
@@ -13,13 +14,15 @@ import {
 import { Platform, MessageStatus } from '../../integrations/enums';
 import { MessageSender, EntryMode } from '../enums';
 import { AppError } from '../../../api/middleware/error.middleware';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class ConversationController {
   constructor(
-    private conversationService: ConversationService,
-    private messageSyncService: MessageSyncService,
-    private messageDeliveryService: MessageDeliveryService
-  ) { }
+    @inject(TOKENS.ConversationService) private conversationService: ConversationService,
+    @inject(TOKENS.MessageSyncService) private messageSyncService: MessageSyncService,
+    @inject(TOKENS.MessageDeliveryService) private messageDeliveryService: MessageDeliveryService
+  ) {}
 
   async listConversations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -28,8 +31,11 @@ export class ConversationController {
 
       const filters = {
         platform: query.platform,
-        unreadOnly: query.unreadOnly === true || query.unreadOnly === ('true' as unknown as boolean),
-        hasOrderDetected: query.hasOrderDetected === true || query.hasOrderDetected === ('true' as unknown as boolean),
+        unreadOnly:
+          query.unreadOnly === true || query.unreadOnly === ('true' as unknown as boolean),
+        hasOrderDetected:
+          query.hasOrderDetected === true ||
+          query.hasOrderDetected === ('true' as unknown as boolean),
         customerId: query.customerId,
         search: query.search,
       };
@@ -106,7 +112,10 @@ export class ConversationController {
         throw new AppError('Message content is required', 400, 'VALIDATION_ERROR');
       }
 
-      const conversation = await this.conversationService.getConversationById(req.params.id, userId);
+      const conversation = await this.conversationService.getConversationById(
+        req.params.id,
+        userId
+      );
 
       const message = await this.conversationService.addMessage({
         conversationId: req.params.id,
@@ -132,12 +141,16 @@ export class ConversationController {
           ...message,
           delivery: deliveryResult
             ? {
-              sent: deliveryResult.success,
-              platformMessageId: deliveryResult.platformMessageId,
-              status: deliveryResult.status,
-              error: deliveryResult.error,
-            }
-            : { sent: false, status: MessageStatus.PENDING, error: 'No recipient ID - saved locally' },
+                sent: deliveryResult.success,
+                platformMessageId: deliveryResult.platformMessageId,
+                status: deliveryResult.status,
+                error: deliveryResult.error,
+              }
+            : {
+                sent: false,
+                status: MessageStatus.PENDING,
+                error: 'No recipient ID - saved locally',
+              },
         },
       });
     } catch (error) {
@@ -157,7 +170,10 @@ export class ConversationController {
         throw new AppError('Invalid sender', 400, 'INVALID_SENDER');
       }
 
-      const conversation = await this.conversationService.getConversationById(req.params.id, req.user!.id);
+      const conversation = await this.conversationService.getConversationById(
+        req.params.id,
+        req.user!.id
+      );
 
       const message = await this.conversationService.addMessage({
         conversationId: req.params.id,

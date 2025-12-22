@@ -14,11 +14,7 @@ export const userValidationSchema = {
       .min(2, 'Business name must be at least 2 characters')
       .max(255, 'Business name must not exceed 255 characters')
       .trim(),
-    email: z
-      .string()
-      .email('Invalid email format')
-      .optional()
-      .or(z.literal('')),
+    email: z.string().email('Invalid email format').optional().or(z.literal('')),
   }),
 
   updateProfile: z.object({
@@ -28,11 +24,7 @@ export const userValidationSchema = {
       .max(255, 'Business name must not exceed 255 characters')
       .trim()
       .optional(),
-    email: z
-      .string()
-      .email('Invalid email format')
-      .optional()
-      .or(z.literal('')),
+    email: z.string().email('Invalid email format').optional().or(z.literal('')),
     businessProfile: z
       .object({
         name: z.string().min(1, 'Business profile name is required').optional(),

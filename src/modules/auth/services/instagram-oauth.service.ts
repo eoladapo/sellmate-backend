@@ -1,7 +1,9 @@
+import { injectable, inject } from 'tsyringe';
 import { IOAuthService } from '../interfaces/oauth-service.interface';
 import { IOAuthTokenRepository } from '../interfaces/oauth-token-repository.interface';
 import { IUserRepository } from '../interfaces/user-repository.interface';
 import { encryptOAuthToken, decryptOAuthToken } from '../../../shared/helpers/encryption';
+import { TOKENS } from '../../../di/tokens';
 
 export interface InstagramOAuthResult {
   success: boolean;
@@ -17,24 +19,27 @@ export interface InstagramOAuthResult {
   error?: string;
 }
 
+@injectable()
 export class InstagramOAuthService {
   // Meta OAuth Scopes for Instagram Messaging API (2024)
   // These permissions allow SellMate to manage the seller's Instagram DMs
   private readonly instagramScopes = [
-    'instagram_basic',           // Basic Instagram profile info
+    'instagram_basic', // Basic Instagram profile info
     'instagram_manage_messages', // Read/send Instagram DMs
-    'pages_messaging',           // Required for messaging via Pages
-    'pages_manage_metadata',     // Manage Page settings
-    'business_management',       // Access business info
+    'pages_messaging', // Required for messaging via Pages
+    'pages_manage_metadata', // Manage Page settings
+    'business_management', // Access business info
   ];
 
   constructor(
-    private oauthService: IOAuthService,
-    private oauthTokenRepository: IOAuthTokenRepository,
-    private userRepository: IUserRepository
-  ) { }
+    @inject(TOKENS.OAuthService) private oauthService: IOAuthService,
+    @inject(TOKENS.OAuthTokenRepository) private oauthTokenRepository: IOAuthTokenRepository,
+    @inject(TOKENS.UserRepository) private userRepository: IUserRepository
+  ) {}
 
-  async initiateOAuth(userId: string): Promise<{ success: boolean; authUrl?: string; error?: string }> {
+  async initiateOAuth(
+    userId: string
+  ): Promise<{ success: boolean; authUrl?: string; error?: string }> {
     try {
       // Generate state parameter
       const state = await this.oauthService.generateState(userId, 'instagram');
@@ -151,7 +156,10 @@ export class InstagramOAuthService {
   async refreshToken(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
       // Get stored token
-      const storedToken = await this.oauthTokenRepository.findByUserAndPlatform(userId, 'instagram');
+      const storedToken = await this.oauthTokenRepository.findByUserAndPlatform(
+        userId,
+        'instagram'
+      );
       if (!storedToken || !storedToken.encryptedRefreshToken) {
         return {
           success: false,
@@ -200,7 +208,10 @@ export class InstagramOAuthService {
   async disconnect(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
       // Get stored token
-      const storedToken = await this.oauthTokenRepository.findByUserAndPlatform(userId, 'instagram');
+      const storedToken = await this.oauthTokenRepository.findByUserAndPlatform(
+        userId,
+        'instagram'
+      );
       if (storedToken) {
         // Decrypt access token for revocation
         const accessToken = decryptOAuthToken(storedToken.encryptedAccessToken);
@@ -239,7 +250,10 @@ export class InstagramOAuthService {
 
   async getAccessToken(userId: string): Promise<string | null> {
     try {
-      const storedToken = await this.oauthTokenRepository.findByUserAndPlatform(userId, 'instagram');
+      const storedToken = await this.oauthTokenRepository.findByUserAndPlatform(
+        userId,
+        'instagram'
+      );
       if (!storedToken) {
         return null;
       }
@@ -253,7 +267,10 @@ export class InstagramOAuthService {
         }
 
         // Get updated token
-        const updatedToken = await this.oauthTokenRepository.findByUserAndPlatform(userId, 'instagram');
+        const updatedToken = await this.oauthTokenRepository.findByUserAndPlatform(
+          userId,
+          'instagram'
+        );
         if (!updatedToken) {
           return null;
         }

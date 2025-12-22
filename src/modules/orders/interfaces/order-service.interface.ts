@@ -19,7 +19,11 @@ export interface UpdateOrderRequest {
 }
 
 export interface IOrderService {
-  getOrders(userId: string, filters?: OrderFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Order>>;
+  getOrders(
+    userId: string,
+    filters?: OrderFilters,
+    pagination?: PaginationOptions
+  ): Promise<PaginatedResult<Order>>;
   getOrderById(orderId: string, userId: string): Promise<Order>;
   getOrdersByCustomer(userId: string, customerId: string): Promise<Order[]>;
   getAbandonedOrders(userId: string): Promise<Order[]>;

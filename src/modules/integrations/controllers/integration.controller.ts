@@ -1,5 +1,6 @@
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
-import { DataSource } from 'typeorm';
+import { TOKENS } from '../../../di/tokens';
 import { Platform, ConnectionStatus } from '../enums';
 import { IntegrationConnectionRepository } from '../repositories';
 import { WhatsAppIntegrationService } from '../services/whatsapp-integration.service';
@@ -11,14 +12,12 @@ import { decryptOAuthToken } from '../../../shared/helpers/encryption';
  * Integration Controller
  * Handles integration management endpoints
  */
+@injectable()
 export class IntegrationController {
-  private connectionRepository: IntegrationConnectionRepository;
-  private oauthTokenRepository: OAuthTokenRepository;
-
-  constructor(dataSource: DataSource) {
-    this.connectionRepository = new IntegrationConnectionRepository(dataSource);
-    this.oauthTokenRepository = new OAuthTokenRepository(dataSource);
-  }
+  constructor(
+    @inject(TOKENS.IntegrationConnectionRepository) private connectionRepository: IntegrationConnectionRepository,
+    @inject(TOKENS.OAuthTokenRepository) private oauthTokenRepository: OAuthTokenRepository
+  ) { }
 
   /**
    * Get status of all integrations for the authenticated user

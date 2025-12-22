@@ -20,7 +20,11 @@ export interface PaginatedResult<T> {
 
 export interface IOrderRepository {
   findById(id: string): Promise<Order | null>;
-  findByUser(userId: string, filters?: OrderFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Order>>;
+  findByUser(
+    userId: string,
+    filters?: OrderFilters,
+    pagination?: PaginationOptions
+  ): Promise<PaginatedResult<Order>>;
   findByCustomer(userId: string, customerId: string): Promise<Order[]>;
   findExpiredOrders(userId: string): Promise<Order[]>;
   findAbandonedOrders(userId: string): Promise<Order[]>;

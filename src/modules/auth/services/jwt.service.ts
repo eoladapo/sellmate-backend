@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import * as bcrypt from 'bcrypt';
 import { IJWTService, AuthTokens, RefreshTokenResult } from '../interfaces/jwt-service.interface';
 import { IAuthSessionRepository } from '../interfaces/auth-session-repository.interface';
@@ -8,22 +9,28 @@ import {
   verifyRefreshToken,
   AccessTokenPayload,
   RefreshTokenPayload,
-  decodeToken
+  decodeToken,
 } from '../../../shared/helpers/jwt';
 import { DeviceInfo } from '../interfaces/device-info.interface';
 import { RedisService } from '../../../shared/services/redis.service';
 import { appConfig } from '../../../config/app.config';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class JWTService implements IJWTService {
   private readonly ACCESS_TOKEN_EXPIRY = appConfig.jwt.accessTokenExpiry;
   private readonly REFRESH_TOKEN_EXPIRY = appConfig.jwt.refreshTokenExpiry;
 
   constructor(
-    private authSessionRepository: IAuthSessionRepository,
-    private redisService: RedisService
-  ) { }
+    @inject(TOKENS.AuthSessionRepository) private authSessionRepository: IAuthSessionRepository,
+    @inject(TOKENS.RedisService) private redisService: RedisService
+  ) {}
 
-  async generateTokens(userId: string, phoneNumber: string, deviceInfo: DeviceInfo): Promise<AuthTokens> {
+  async generateTokens(
+    userId: string,
+    phoneNumber: string,
+    deviceInfo: DeviceInfo
+  ): Promise<AuthTokens> {
     // Create session record first
     const expiresAt = new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY * 1000);
 
@@ -136,7 +143,9 @@ export class JWTService implements IJWTService {
     return this.authSessionRepository.deleteByUserId(userId);
   }
 
-  async validateAccessToken(token: string): Promise<{ valid: boolean; userId?: string; error?: string }> {
+  async validateAccessToken(
+    token: string
+  ): Promise<{ valid: boolean; userId?: string; error?: string }> {
     try {
       const verificationResult = verifyAccessToken(token);
 

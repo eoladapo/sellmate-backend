@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import {
   IProfitService,
   ProfitCalculationInput,
@@ -8,6 +9,7 @@ import {
  * Service for calculating profit metrics
  * Implements profit calculation logic for orders
  */
+@injectable()
 export class ProfitService implements IProfitService {
   /**
    * Calculate comprehensive profit metrics from input

@@ -20,19 +20,13 @@ export interface MessageFilters {
  */
 export interface IMessageRepository {
   findById(id: string): Promise<Message | null>;
-  findByPlatformMessageId(
-    platform: Platform,
-    platformMessageId: string
-  ): Promise<Message | null>;
+  findByPlatformMessageId(platform: Platform, platformMessageId: string): Promise<Message | null>;
   findByConversation(
     conversationId: string,
     filters?: MessageFilters,
     pagination?: PaginationOptions
   ): Promise<PaginatedResult<Message>>;
-  findRecentByConversation(
-    conversationId: string,
-    limit?: number
-  ): Promise<Message[]>;
+  findRecentByConversation(conversationId: string, limit?: number): Promise<Message[]>;
   create(data: Partial<Message>): Promise<Message>;
   createMany(data: Partial<Message>[]): Promise<Message[]>;
   update(id: string, data: Partial<Message>): Promise<Message>;
@@ -43,14 +37,7 @@ export interface IMessageRepository {
   delete(id: string): Promise<boolean>;
   countByConversation(conversationId: string): Promise<number>;
   countUnreadByConversation(conversationId: string): Promise<number>;
-  existsByPlatformMessageId(
-    platform: Platform,
-    platformMessageId: string
-  ): Promise<boolean>;
+  existsByPlatformMessageId(platform: Platform, platformMessageId: string): Promise<boolean>;
   findLatestByConversation(conversationId: string): Promise<Message | null>;
-  findByUserAndDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<Message[]>;
+  findByUserAndDateRange(userId: string, startDate: Date, endDate: Date): Promise<Message[]>;
 }

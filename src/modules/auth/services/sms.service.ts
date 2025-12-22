@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { Twilio } from 'twilio';
 import { ISMSService } from './otp.service';
 import { appConfig } from '../../../config/app.config';
@@ -6,6 +7,7 @@ import { appConfig } from '../../../config/app.config';
  * Twilio Verify Service - Uses Twilio's Verify API for OTP
  * This works globally including Nigeria on trial accounts
  */
+@injectable()
 export class TwilioVerifyService implements ISMSService {
   private client: Twilio;
   private verifyServiceSid: string;
@@ -21,7 +23,10 @@ export class TwilioVerifyService implements ISMSService {
     this.client = new Twilio(accountSid, authToken);
   }
 
-  async sendSMS(phoneNumber: string, _message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendSMS(
+    phoneNumber: string,
+    _message: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       // Twilio Verify sends its own OTP, we ignore the message parameter
       const verification = await this.client.verify.v2
@@ -49,7 +54,10 @@ export class TwilioVerifyService implements ISMSService {
   /**
    * Verify the OTP code sent by Twilio Verify
    */
-  async verifyCode(phoneNumber: string, code: string): Promise<{ success: boolean; error?: string }> {
+  async verifyCode(
+    phoneNumber: string,
+    code: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const verificationCheck = await this.client.verify.v2
         .services(this.verifyServiceSid)
@@ -76,6 +84,7 @@ export class TwilioVerifyService implements ISMSService {
  * Legacy Twilio SMS Service - Uses regular SMS API
  * Note: May not work for international numbers on trial accounts
  */
+@injectable()
 export class TwilioSMSService implements ISMSService {
   private client: Twilio;
   private fromNumber: string;
@@ -91,7 +100,10 @@ export class TwilioSMSService implements ISMSService {
     this.client = new Twilio(accountSid, authToken);
   }
 
-  async sendSMS(phoneNumber: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendSMS(
+    phoneNumber: string,
+    message: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       const result = await this.client.messages.create({
         body: message,
@@ -114,8 +126,12 @@ export class TwilioSMSService implements ISMSService {
 }
 
 // Mock SMS service for development/testing
+@injectable()
 export class MockSMSService implements ISMSService {
-  async sendSMS(phoneNumber: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendSMS(
+    phoneNumber: string,
+    message: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     // In development, just log the OTP instead of sending SMS
     console.log(`[MOCK SMS] To: ${phoneNumber}, Message: ${message}`);
 

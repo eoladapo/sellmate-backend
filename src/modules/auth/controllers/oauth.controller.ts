@@ -1,15 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
+import { injectable, inject } from 'tsyringe';
 import { WhatsAppOAuthService } from '../services/whatsapp-oauth.service';
 import { OAuthCallbackDto } from '../dto/oauth-initiate.dto';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { InstagramOAuthService } from '../services';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class OAuthController {
   constructor(
-    private whatsappOAuthService: WhatsAppOAuthService,
-    private instagramOAuthService: InstagramOAuthService
-  ) { }
+    @inject(TOKENS.WhatsAppOAuthService) private whatsappOAuthService: WhatsAppOAuthService,
+    @inject(TOKENS.InstagramOAuthService) private instagramOAuthService: InstagramOAuthService
+  ) {}
 
   /**
    * Initiate WhatsApp OAuth flow

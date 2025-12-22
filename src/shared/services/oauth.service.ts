@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import crypto from 'crypto';
 import axios from 'axios';
 import {
@@ -18,6 +19,7 @@ import { appConfig } from '../../config/app.config';
  * - Each seller connects THEIR OWN WhatsApp/Instagram accounts
  * - Tokens are per-user, not per-platform
  */
+@injectable()
 export class OAuthService implements IOAuthService {
   private readonly stateStore = new Map<string, OAuthState>();
   private readonly stateExpiryMs = 10 * 60 * 1000; // 10 minutes

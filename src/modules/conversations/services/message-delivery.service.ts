@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { injectable, inject } from 'tsyringe';
 import { Message } from '../entities';
 import { MessageRepository } from '../repositories/message.repository';
 import { IntegrationConnectionRepository } from '../../integrations/repositories';
@@ -8,6 +8,7 @@ import { InstagramIntegrationService } from '../../integrations/services/instagr
 import { Platform, MessageType, MessageStatus, ConnectionStatus } from '../../integrations/enums';
 import { SendMessageResponse } from '../../integrations/interfaces';
 import { decryptOAuthToken } from '../../../shared/helpers/encryption';
+import { TOKENS } from '../../../di/tokens';
 
 /**
  * Message delivery result
@@ -24,16 +25,14 @@ export interface MessageDeliveryResult {
  * Message Delivery Service
  * Handles sending messages through platform APIs (WhatsApp/Instagram)
  */
+@injectable()
 export class MessageDeliveryService {
-  private messageRepository: MessageRepository;
-  private integrationConnectionRepository: IntegrationConnectionRepository;
-  private oauthTokenRepository: OAuthTokenRepository;
-
-  constructor(dataSource: DataSource) {
-    this.messageRepository = new MessageRepository(dataSource);
-    this.integrationConnectionRepository = new IntegrationConnectionRepository(dataSource);
-    this.oauthTokenRepository = new OAuthTokenRepository(dataSource);
-  }
+  constructor(
+    @inject(TOKENS.MessageRepository) private messageRepository: MessageRepository,
+    @inject(TOKENS.IntegrationConnectionRepository)
+    private integrationConnectionRepository: IntegrationConnectionRepository,
+    @inject(TOKENS.OAuthTokenRepository) private oauthTokenRepository: OAuthTokenRepository
+  ) {}
 
   /**
    * Send a message through the appropriate platform API

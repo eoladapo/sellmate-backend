@@ -1,41 +1,29 @@
-import {
-  Subscription,
-  PaymentMethod,
-  UsageLimits,
-  CurrentUsage,
-} from '../entities';
+import { Subscription } from '../entities';
 import {
   SubscriptionPlan,
   SubscriptionStatus,
   BillingCycle,
-  PaymentMethodType,
 } from '../enums';
 
 /**
- * Add payment method request
+ * Change plan request (replaces separate upgrade/downgrade requests)
  */
-export interface AddPaymentMethodRequest {
-  type: PaymentMethodType;
-  last4?: string;
-  expiryMonth?: number;
-  expiryYear?: number;
-  bankName?: string;
-  accountLast4?: string;
-  mobileNumber?: string;
-  provider?: string;
-  setAsDefault?: boolean;
-}
-
-/**
- * Upgrade subscription request
- */
-export interface UpgradeSubscriptionRequest {
+export interface ChangePlanRequest {
   plan: SubscriptionPlan;
   billingCycle?: BillingCycle;
 }
 
 /**
- * Subscription summary response
+ * Paystack authorization data from successful payment
+ */
+export interface PaystackAuthorization {
+  authorizationCode: string;
+  customerCode?: string;
+}
+
+/**
+ * Simplified subscription summary response (MVP)
+ * Removed: usageLimits, currentUsage, paymentMethods
  */
 export interface SubscriptionSummary {
   id: string;
@@ -47,9 +35,6 @@ export interface SubscriptionSummary {
   trialEnd?: Date;
   amount: number;
   currency: string;
-  usageLimits: UsageLimits;
-  currentUsage: CurrentUsage;
-  paymentMethods: PaymentMethod[];
   nextPaymentDate?: Date;
   daysUntilRenewal: number;
   isTrialActive: boolean;
@@ -58,18 +43,10 @@ export interface SubscriptionSummary {
 }
 
 /**
- * Usage check result
- */
-export interface UsageCheckResult {
-  allowed: boolean;
-  currentValue: number;
-  limit: number;
-  percentUsed: number;
-  message?: string;
-}
-
-/**
- * Subscription service interface
+ * Simplified subscription service interface (MVP)
+ * Removed: usage tracking, payment method management
+ * Consolidated: upgrade/downgrade into changePlan
+ * Added: Paystack integration methods (merged from BillingService)
  */
 export interface ISubscriptionService {
   /**
@@ -88,20 +65,11 @@ export interface ISubscriptionService {
   initializeSubscription(userId: string): Promise<Subscription>;
 
   /**
-   * Upgrade subscription plan
+   * Change subscription plan (handles both upgrades and downgrades)
+   * - Upgrades: Take effect immediately
+   * - Downgrades: Take effect at end of current billing period
    */
-  upgradeSubscription(
-    userId: string,
-    request: UpgradeSubscriptionRequest
-  ): Promise<Subscription>;
-
-  /**
-   * Downgrade subscription plan
-   */
-  downgradeSubscription(
-    userId: string,
-    request: UpgradeSubscriptionRequest
-  ): Promise<Subscription>;
+  changePlan(userId: string, request: ChangePlanRequest): Promise<Subscription>;
 
   /**
    * Cancel subscription
@@ -114,52 +82,74 @@ export interface ISubscriptionService {
   reactivateSubscription(userId: string): Promise<Subscription>;
 
   /**
-   * Add payment method
+   * Activate subscription after successful Paystack payment
    */
-  addPaymentMethod(
+  activateAfterPayment(
     userId: string,
-    paymentMethod: AddPaymentMethodRequest
-  ): Promise<PaymentMethod[]>;
+    paystackAuth: PaystackAuthorization
+  ): Promise<Subscription>;
 
   /**
-   * Remove payment method
+   * Handle successful payment webhook from Paystack
    */
-  removePaymentMethod(userId: string, index: number): Promise<PaymentMethod[]>;
+  handlePaymentSuccess(userId: string): Promise<Subscription>;
 
   /**
-   * Set default payment method
+   * Handle failed payment webhook from Paystack
    */
-  setDefaultPaymentMethod(userId: string, index: number): Promise<PaymentMethod[]>;
-
-  /**
-   * Check if user can perform action based on usage limits
-   */
-  checkUsageLimit(
-    userId: string,
-    resource: keyof UsageLimits
-  ): Promise<UsageCheckResult>;
-
-  /**
-   * Increment usage counter
-   */
-  incrementUsage(
-    userId: string,
-    resource: keyof CurrentUsage,
-    amount?: number
-  ): Promise<CurrentUsage>;
-
-  /**
-   * Reset monthly usage counters
-   */
-  resetMonthlyUsage(userId: string): Promise<CurrentUsage>;
+  handlePaymentFailure(userId: string): Promise<Subscription>;
 
   /**
    * Get plan pricing
    */
   getPlanPricing(plan: SubscriptionPlan, billingCycle: BillingCycle): number;
 
+  // ============================================
+  // Paystack Integration Methods
+  // ============================================
+
   /**
-   * Get plan limits
+   * Initialize a Paystack payment transaction
    */
-  getPlanLimits(plan: SubscriptionPlan): UsageLimits;
+  initializePayment(
+    userId: string,
+    email: string,
+    amount: number,
+    description: string,
+    callbackUrl?: string
+  ): Promise<InitializePaymentResponse>;
+
+  /**
+   * Verify a Paystack payment after callback
+   */
+  verifyPayment(reference: string): Promise<VerifyPaymentResult>;
+
+  /**
+   * Verify Paystack webhook signature
+   */
+  verifyWebhookSignature(payload: string, signature: string): boolean;
+
+  /**
+   * Handle Paystack webhook events
+   */
+  handleWebhook(event: string, data: Record<string, unknown>): Promise<void>;
+}
+
+/**
+ * Initialize payment response
+ */
+export interface InitializePaymentResponse {
+  authorizationUrl: string;
+  accessCode: string;
+  reference: string;
+}
+
+/**
+ * Verify payment result
+ */
+export interface VerifyPaymentResult {
+  success: boolean;
+  message: string;
+  authorizationCode?: string;
+  customerCode?: string;
 }

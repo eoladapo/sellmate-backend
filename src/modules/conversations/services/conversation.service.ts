@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Conversation, Message } from '../entities';
 import { ConversationRepository } from '../repositories/conversation.repository';
 import { MessageRepository } from '../repositories/message.repository';
@@ -15,16 +16,18 @@ import {
 import { Platform, MessageType, MessageStatus } from '../../integrations/enums';
 import { ConversationStatus, MessageSender, EntryMode } from '../enums';
 import { AppError } from '../../../api/middleware/error.middleware';
+import { TOKENS } from '../../../di/tokens';
 
 /**
  * Conversation Service
  * Handles business logic for conversation and message management
  */
+@injectable()
 export class ConversationService implements IConversationService {
   constructor(
-    private conversationRepository: ConversationRepository,
-    private messageRepository: MessageRepository
-  ) { }
+    @inject(TOKENS.ConversationRepository) private conversationRepository: ConversationRepository,
+    @inject(TOKENS.MessageRepository) private messageRepository: MessageRepository
+  ) {}
 
   /**
    * Get paginated list of conversations for a user

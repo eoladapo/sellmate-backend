@@ -3,6 +3,9 @@
  * Runs before all tests to configure the test environment
  */
 
+// Import reflect-metadata for tsyringe DI decorators
+import 'reflect-metadata';
+
 // Set test environment variables BEFORE importing any modules
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';

@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Order } from '../entities';
 import { OrderRepository } from '../repositories/order.repository';
 import {
@@ -10,11 +11,13 @@ import {
 } from '../interfaces';
 import { OrderStatus } from '../enums';
 import { AppError } from '../../../api/middleware/error.middleware';
+import { TOKENS } from '../../../di/tokens';
 
 const ORDER_EXPIRATION_HOURS = 48;
 
+@injectable()
 export class OrderService implements IOrderService {
-  constructor(private orderRepository: OrderRepository) { }
+  constructor(@inject(TOKENS.OrderRepository) private orderRepository: OrderRepository) {}
 
   async getOrders(
     userId: string,
@@ -93,7 +96,9 @@ export class OrderService implements IOrderService {
 
     // Clear expiration when order is confirmed or delivered
     const expiresAt =
-      status === OrderStatus.CONFIRMED || status === OrderStatus.DELIVERED ? undefined : order.expiresAt;
+      status === OrderStatus.CONFIRMED || status === OrderStatus.DELIVERED
+        ? undefined
+        : order.expiresAt;
 
     return this.orderRepository.update(orderId, { status, expiresAt });
   }
@@ -102,7 +107,11 @@ export class OrderService implements IOrderService {
     const order = await this.getOrderById(orderId, userId);
 
     if (order.status !== OrderStatus.EXPIRED && order.status !== OrderStatus.ABANDONED) {
-      throw new AppError('Only expired or abandoned orders can be reactivated', 400, 'INVALID_STATUS');
+      throw new AppError(
+        'Only expired or abandoned orders can be reactivated',
+        400,
+        'INVALID_STATUS'
+      );
     }
 
     const expiresAt = new Date();
@@ -115,10 +124,17 @@ export class OrderService implements IOrderService {
     const order = await this.getOrderById(orderId, userId);
 
     if (order.status === OrderStatus.CONFIRMED || order.status === OrderStatus.DELIVERED) {
-      throw new AppError('Cannot mark confirmed or delivered orders as abandoned', 400, 'INVALID_STATUS');
+      throw new AppError(
+        'Cannot mark confirmed or delivered orders as abandoned',
+        400,
+        'INVALID_STATUS'
+      );
     }
 
-    return this.orderRepository.update(orderId, { status: OrderStatus.ABANDONED, expiresAt: undefined });
+    return this.orderRepository.update(orderId, {
+      status: OrderStatus.ABANDONED,
+      expiresAt: undefined,
+    });
   }
 
   async processExpiredOrders(): Promise<number> {

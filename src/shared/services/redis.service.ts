@@ -1,6 +1,8 @@
+import { injectable } from 'tsyringe';
 import { createClient, RedisClientType } from 'redis';
 import { appConfig } from '../../config/app.config';
 
+@injectable()
 export class RedisService {
   private client: RedisClientType;
   private isConnected = false;

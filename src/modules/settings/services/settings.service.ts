@@ -1,3 +1,5 @@
+import { injectable, inject } from 'tsyringe';
+import { TOKENS } from '../../../di/tokens';
 import {
   UserSettings,
   NotificationPreferences,
@@ -22,8 +24,9 @@ import { NotificationChannelType, DataRetentionPeriod, SyncInterval } from '../e
 /**
  * Settings service implementation
  */
+@injectable()
 export class SettingsService implements ISettingsService {
-  constructor(private settingsRepository: SettingsRepository) { }
+  constructor(@inject(TOKENS.SettingsRepository) private settingsRepository: SettingsRepository) { }
 
   async getSettings(userId: string): Promise<UserSettings> {
     return this.settingsRepository.getOrCreate(userId);

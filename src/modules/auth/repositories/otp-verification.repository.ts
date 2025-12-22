@@ -1,11 +1,14 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource, LessThan } from 'typeorm';
 import { OTPVerification } from '../entities/otp-verification.entity';
 import { IOTPRepository } from '../interfaces/otp-repository.interface';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class OTPVerificationRepository implements IOTPRepository {
   private repository: Repository<OTPVerification>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(OTPVerification);
   }
 

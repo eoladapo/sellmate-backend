@@ -1,15 +1,21 @@
+import { injectable, inject } from 'tsyringe';
 import { Repository, DataSource } from 'typeorm';
 import { OAuthToken } from '../entities/oauth-token.entity';
 import { IOAuthTokenRepository } from '../interfaces/oauth-token-repository.interface';
+import { TOKENS } from '../../../di/tokens';
 
+@injectable()
 export class OAuthTokenRepository implements IOAuthTokenRepository {
   private repository: Repository<OAuthToken>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(@inject(TOKENS.DataSource) private dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(OAuthToken);
   }
 
-  async findByUserAndPlatform(userId: string, platform: 'whatsapp' | 'instagram'): Promise<OAuthToken | null> {
+  async findByUserAndPlatform(
+    userId: string,
+    platform: 'whatsapp' | 'instagram'
+  ): Promise<OAuthToken | null> {
     return this.repository.findOne({
       where: {
         userId,

@@ -62,11 +62,7 @@ export interface IMessageSyncService {
   /**
    * Sync messages for a specific platform
    */
-  syncPlatform(
-    userId: string,
-    platform: Platform,
-    options?: SyncOptions
-  ): Promise<SyncResult>;
+  syncPlatform(userId: string, platform: Platform, options?: SyncOptions): Promise<SyncResult>;
 
   /**
    * Sync all connected platforms for a user
@@ -85,10 +81,7 @@ export interface IMessageSyncService {
   /**
    * Check if a message is a duplicate
    */
-  isDuplicateMessage(
-    platform: Platform,
-    platformMessageId: string
-  ): Promise<boolean>;
+  isDuplicateMessage(platform: Platform, platformMessageId: string): Promise<boolean>;
 
   /**
    * Get sync status for a platform
@@ -113,10 +106,7 @@ export interface IMessageSyncService {
   /**
    * Handle sync conflict (same message from multiple sources)
    */
-  resolveConflict(
-    existingMessage: Message,
-    incomingMessage: IncomingMessage
-  ): Promise<Message>;
+  resolveConflict(existingMessage: Message, incomingMessage: IncomingMessage): Promise<Message>;
 
   /**
    * Get last sync timestamp for a platform
