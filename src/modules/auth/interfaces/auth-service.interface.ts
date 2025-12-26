@@ -33,5 +33,4 @@ export interface IAuthService {
     refreshToken: string
   ): Promise<{ success: boolean; tokens?: AuthTokens; error?: string }>;
   logout(refreshToken: string): Promise<boolean>;
-  logoutAllDevices(userId: string): Promise<number>;
 }

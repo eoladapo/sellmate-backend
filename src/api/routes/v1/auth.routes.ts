@@ -148,22 +148,6 @@ router.post('/logout', bind<AuthController>(TOKENS.AuthController, 'logout'));
 
 /**
  * @swagger
- * /api/v1/auth/logout-all:
- *   post:
- *     summary: Logout from all devices
- *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Logged out from all devices successfully
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- */
-router.post('/logout-all', authMiddleware, bind<AuthController>(TOKENS.AuthController, 'logoutAllDevices'));
-
-/**
- * @swagger
  * /api/v1/auth/me:
  *   get:
  *     summary: Get current user profile

@@ -6,11 +6,10 @@ import { TOKENS } from '../../../di/tokens';
 
 @injectable()
 export class AuthController {
-  constructor(@inject(TOKENS.AuthService) private authService: IAuthService) {}
+  constructor(@inject(TOKENS.AuthService) private authService: IAuthService) { }
 
   /**
    * Register a new user
-   * POST /api/v1/auth/register
    */
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -54,7 +53,6 @@ export class AuthController {
 
   /**
    * Verify OTP and login user
-   * POST /api/v1/auth/verify-otp
    */
   async verifyOTPAndLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -73,7 +71,7 @@ export class AuthController {
       const userAgent = req.headers['user-agent'] || 'Unknown';
       const deviceInfo: DeviceInfo = {
         userAgent,
-        ipAddress: req.ip || req.connection.remoteAddress || 'Unknown',
+        ipAddress: req.ip || req.socket?.remoteAddress || 'Unknown',
         deviceType: this.detectDeviceType(userAgent),
       };
 
@@ -109,7 +107,6 @@ export class AuthController {
 
   /**
    * Login existing user (sends OTP)
-   * POST /api/v1/auth/login
    */
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -146,7 +143,6 @@ export class AuthController {
 
   /**
    * Refresh access token
-   * POST /api/v1/auth/refresh
    */
   async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -180,7 +176,6 @@ export class AuthController {
 
   /**
    * Logout user (revoke refresh token)
-   * POST /api/v1/auth/logout
    */
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -213,35 +208,7 @@ export class AuthController {
   }
 
   /**
-   * Logout from all devices
-   * POST /api/v1/auth/logout-all
-   */
-  async logoutAllDevices(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          error: 'Authentication required',
-        });
-        return;
-      }
-
-      const revokedCount = await this.authService.logoutAllDevices(userId);
-
-      res.json({
-        success: true,
-        message: `Logged out from ${revokedCount} devices`,
-        revokedTokens: revokedCount,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Get current user profile
-   * GET /api/v1/auth/me
    */
   async getCurrentUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

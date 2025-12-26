@@ -19,7 +19,7 @@ export class AuthService implements IAuthService {
     @inject(TOKENS.UserRepository) private userRepository: IUserRepository,
     @inject(TOKENS.OTPService) private otpService: IOTPService,
     @inject(TOKENS.JWTService) private jwtService: IJWTService
-  ) {}
+  ) { }
 
   async register(
     phoneNumber: string,
@@ -181,7 +181,5 @@ export class AuthService implements IAuthService {
     return this.jwtService.revokeToken(refreshToken);
   }
 
-  async logoutAllDevices(userId: string): Promise<number> {
-    return this.jwtService.revokeAllUserTokens(userId);
-  }
+
 }
