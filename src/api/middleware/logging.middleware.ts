@@ -121,33 +121,3 @@ export const securityLogger = (req: Request, _res: Response, next: NextFunction)
 
   next();
 };
-
-/**
- * API usage analytics logger
- * Tracks endpoint usage for analytics
- */
-export const analyticsLogger = (req: Request, _res: Response, next: NextFunction): void => {
-  // Skip logging for health checks and static assets
-  const skipPaths = ['/health', '/favicon.ico', '/robots.txt'];
-
-  if (skipPaths.includes(req.path)) {
-    return next();
-  }
-
-  // Log API usage (could be sent to analytics service)
-  const analyticsData = {
-    endpoint: req.path,
-    method: req.method,
-    timestamp: new Date().toISOString(),
-    userAgent: req.get('User-Agent'),
-    ip: req.ip,
-    userId: req.user?.id,
-  };
-
-  // In production, this could be sent to an analytics service
-  if (process.env.NODE_ENV === 'development') {
-    console.log('📊 API Usage:', analyticsData);
-  }
-
-  next();
-};
