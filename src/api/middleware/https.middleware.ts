@@ -1,9 +1,3 @@
-/**
- * HTTPS Enforcement Middleware
- * Ensures secure connections in production
- * Requirements: 8.2, 8.4
- */
-
 import { Request, Response, NextFunction } from 'express';
 import { tlsConfig } from '../../config/security.config';
 

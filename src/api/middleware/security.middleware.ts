@@ -16,10 +16,7 @@ const buildCspDirectives = () => {
   return directives;
 };
 
-/**
- * Security headers middleware using Helmet
- * Requirements: 8.2, 8.4
- */
+
 export const securityHeaders = helmet({
   // Content Security Policy
   contentSecurityPolicy: {
