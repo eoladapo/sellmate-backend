@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import * as bcrypt from 'bcrypt';
+import { hash, compare } from 'bcrypt';
 import { IJWTService, AuthTokens, RefreshTokenResult } from '../interfaces/jwt-service.interface';
 import { IAuthSessionRepository } from '../interfaces/auth-session-repository.interface';
 import {
@@ -24,7 +24,7 @@ export class JWTService implements IJWTService {
   constructor(
     @inject(TOKENS.AuthSessionRepository) private authSessionRepository: IAuthSessionRepository,
     @inject(TOKENS.RedisService) private redisService: RedisService
-  ) {}
+  ) { }
 
   async generateTokens(
     userId: string,
@@ -50,7 +50,7 @@ export class JWTService implements IJWTService {
     const refreshToken = generateRefreshToken(refreshTokenPayload);
 
     // Hash and store refresh token
-    const refreshTokenHash = await bcrypt.hash(refreshToken, 12);
+    const refreshTokenHash = await hash(refreshToken, 12);
     await this.authSessionRepository.update(session.id, { refreshTokenHash });
 
     return {
@@ -85,7 +85,7 @@ export class JWTService implements IJWTService {
       }
 
       // Verify refresh token hash matches
-      const tokenMatches = await bcrypt.compare(refreshToken, session.refreshTokenHash);
+      const tokenMatches = await compare(refreshToken, session.refreshTokenHash);
       if (!tokenMatches) {
         return {
           success: false,
