@@ -87,10 +87,10 @@ export const validateHeaders = (schema: ZodSchema, optional = false) => {
 export const sanitizeInput = (req: Request, _res: Response, next: NextFunction): void => {
   const sanitizeString = (str: string): string => {
     return str
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-      .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/vbscript:/gi, '') // Remove vbscript: protocol
-      .replace(/on\w+\s*=/gi, '') // Remove event handlers
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/vbscript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
       .trim();
   };
 

@@ -67,7 +67,7 @@ class App {
     this.app.use(corsMiddleware);
 
     // Request size limiting
-    this.app.use(requestSizeLimit(10 * 1024 * 1024)); // 10MB limit
+    this.app.use(requestSizeLimit(10 * 1024 * 1024));
 
     // Method validation
     this.app.use(validateMethod(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']));

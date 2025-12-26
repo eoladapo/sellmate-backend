@@ -198,7 +198,7 @@ export const validateUserAgent = (req: Request, _res: Response, next: NextFuncti
 /**
  * Request method validation
  */
-export const validateMethod = (allowedMethods: string[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']) => {
+export const validateMethod = (allowedMethods: string[]) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!allowedMethods.includes(req.method)) {
       return next(new AppError(`Method ${req.method} not allowed`, 405, 'METHOD_NOT_ALLOWED'));
