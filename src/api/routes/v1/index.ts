@@ -1,7 +1,4 @@
 import { Router } from 'express';
-import { successResponse } from '../../../shared/utils/response.util';
-
-// Import route modules
 import authRoutes from './auth.routes';
 import webhookRoutes from './webhook.routes';
 import conversationRoutes from './conversations.routes';
