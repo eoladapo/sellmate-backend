@@ -6,16 +6,13 @@ import { initializeDatabase, closeDatabase, getDataSource } from './database/con
 import { initializeRedis, closeRedis } from './config/redis.config';
 import { initializeContainer } from './di';
 
-// Load environment variables
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
 let server: Server;
 
-/**
- * Graceful shutdown handler
- */
+
 const gracefulShutdown = async (signal: string): Promise<void> => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
 
@@ -24,10 +21,8 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
       console.log('✅ HTTP server closed');
 
       try {
-        // Close database connection
         await closeDatabase();
 
-        // Close Redis connection
         await closeRedis();
 
         console.log('✅ All connections closed. Exiting...');
@@ -38,7 +33,6 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
       }
     });
 
-    // Force shutdown after 10 seconds
     setTimeout(() => {
       console.error('⚠️  Forced shutdown after timeout');
       process.exit(1);
@@ -48,28 +42,18 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   }
 };
 
-/**
- * Initialize all connections and start the server
- */
+
 export const startServer = async (): Promise<void> => {
   try {
-    // Initialize database connection
     await initializeDatabase();
-
-    // Initialize Redis connection
     await initializeRedis();
-
-    // Initialize dependency injection container
     const dataSource = getDataSource();
     initializeContainer(dataSource);
-
-    // Start Express server
     server = app.listen(PORT, () => {
       console.log(`📡 Server listening on port ${PORT}`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api/v1/docs`);
     });
 
-    // Handle shutdown signals
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   } catch (error) {
@@ -78,18 +62,15 @@ export const startServer = async (): Promise<void> => {
   }
 };
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
   console.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: unknown) => {
   console.error('❌ Unhandled Rejection:', reason);
   process.exit(1);
 });
 
-// Start the server
 startServer();
 
