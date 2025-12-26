@@ -4,6 +4,20 @@ export {
   IIntegrationServiceFactory,
 } from './integration-service.interface';
 
+// Seller lookup interfaces
+export {
+  ISellerLookupService,
+  SellerInfo,
+} from './seller-lookup-service.interface';
+
+// Webhook processing interfaces
+export {
+  IWebhookProcessingService,
+  WebhookProcessingResult,
+  MessageProcessingResult,
+  ProcessingError,
+} from './webhook-processing-service.interface';
+
 // Configuration interfaces
 export {
   IntegrationConfig,

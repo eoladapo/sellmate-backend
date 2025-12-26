@@ -1,5 +1,6 @@
 import { Platform } from '../../integrations/enums';
-import { Message } from '../entities';
+import { Message, MessageAIAnalysis } from '../entities';
+import { IResponseSuggestion } from '../../ai/interfaces';
 
 /**
  * Sync result for a single platform
@@ -56,6 +57,17 @@ export interface SyncOptions {
 }
 
 /**
+ * Processed message with AI analysis results
+ * Requirements: 2.1, 2.3, 2.4, 3.1, 3.2
+ */
+export interface ProcessedMessage extends Message {
+  aiAnalysis?: MessageAIAnalysis & {
+    suggestedResponses?: IResponseSuggestion[];
+    pendingAnalysis?: boolean;
+  };
+}
+
+/**
  * Message Sync Service Interface
  */
 export interface IMessageSyncService {
@@ -77,6 +89,17 @@ export interface IMessageSyncService {
     platform: Platform,
     messages: IncomingMessage[]
   ): Promise<Message[]>;
+
+  /**
+   * Process incoming messages with AI analysis
+   * Enhanced to include AI analysis and event emission
+   * Requirements: 2.1, 2.3, 2.4, 2.5, 3.1, 3.2, 4.1, 4.2
+   */
+  processIncomingMessagesWithAI(
+    userId: string,
+    platform: Platform,
+    messages: IncomingMessage[]
+  ): Promise<ProcessedMessage[]>;
 
   /**
    * Check if a message is a duplicate

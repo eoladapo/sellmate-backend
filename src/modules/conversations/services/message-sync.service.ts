@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { Message } from '../entities';
+import { Message, MessageAIAnalysis } from '../entities';
 import { ConversationRepository } from '../repositories/conversation.repository';
 import { MessageRepository } from '../repositories/message.repository';
 import { IntegrationConnectionRepository } from '../../integrations/repositories';
@@ -9,10 +9,15 @@ import {
   SyncStatus,
   IncomingMessage,
   SyncOptions,
+  ProcessedMessage,
 } from '../interfaces';
 import { Platform, MessageType, MessageStatus, ConnectionStatus } from '../../integrations/enums';
 import { MessageSender, EntryMode } from '../enums';
 import { TOKENS } from '../../../di/tokens';
+import { AIService } from '../../ai/services/ai.service';
+import { IAIAnalysisOutput, IResponseSuggestion } from '../../ai/interfaces';
+import { IMessageEventEmitter } from '../events/message-events';
+import { NewMessageEvent, OrderDetectedEvent, ConversationUpdatedEvent } from '../events/message-events';
 
 /**
  * Scheduled sync job tracking
@@ -24,19 +29,41 @@ interface ScheduledJob {
 }
 
 /**
+ * AI analysis confidence threshold for order detection
+ * Requirements: 2.2
+ */
+const ORDER_DETECTION_THRESHOLD = 0.5;
+
+/**
  * Message Sync Service
  * Handles synchronization of messages from external platforms
  */
 @injectable()
 export class MessageSyncService implements IMessageSyncService {
   private scheduledJobs: Map<string, ScheduledJob> = new Map();
+  private aiService: AIService;
+  private eventEmitter: IMessageEventEmitter;
 
   constructor(
     @inject(TOKENS.ConversationRepository) private conversationRepository: ConversationRepository,
     @inject(TOKENS.MessageRepository) private messageRepository: MessageRepository,
     @inject(TOKENS.IntegrationConnectionRepository)
-    private integrationConnectionRepository: IntegrationConnectionRepository
-  ) {}
+    private integrationConnectionRepository: IntegrationConnectionRepository,
+    @inject(TOKENS.AIService) aiService?: AIService,
+    @inject(TOKENS.EventEmitterService) eventEmitter?: IMessageEventEmitter
+  ) {
+    // AIService is optional to maintain backward compatibility
+    this.aiService = aiService || new AIService();
+    // EventEmitterService is optional to maintain backward compatibility
+    // Falls back to singleton if not injected
+    if (eventEmitter) {
+      this.eventEmitter = eventEmitter;
+    } else {
+      // Lazy import to avoid circular dependency issues
+      const { getEventEmitterService } = require('../events/event-emitter.service');
+      this.eventEmitter = getEventEmitterService();
+    }
+  }
 
   /**
    * Sync messages for a specific platform
@@ -234,6 +261,246 @@ export class MessageSyncService implements IMessageSyncService {
     }
 
     return processedMessages;
+  }
+
+  /**
+   * Process incoming messages with AI analysis
+   * Enhanced to include AI analysis and event emission
+   * Requirements: 2.1, 2.3, 2.4, 2.5, 3.1, 3.2, 4.1, 4.2
+   */
+  async processIncomingMessagesWithAI(
+    userId: string,
+    platform: Platform,
+    messages: IncomingMessage[]
+  ): Promise<ProcessedMessage[]> {
+    const processedMessages: ProcessedMessage[] = [];
+    const conversationsToUpdate = new Set<string>();
+
+    for (const incoming of messages) {
+      // Check for duplicate
+      const isDuplicate = await this.isDuplicateMessage(platform, incoming.platformMessageId);
+
+      if (isDuplicate) {
+        continue;
+      }
+
+      // Find or create conversation
+      const conversation = await this.conversationRepository.findByUserAndPlatformId(
+        userId,
+        platform,
+        incoming.platformConversationId
+      );
+
+      let conversationId: string;
+
+      if (conversation) {
+        conversationId = conversation.id;
+
+        // Update participant info if needed
+        if (incoming.senderName && !conversation.participantName) {
+          await this.conversationRepository.update(conversation.id, {
+            participantName: incoming.senderName,
+            platformParticipantId: incoming.senderId,
+          });
+        }
+        if (incoming.senderProfilePicture) {
+          await this.conversationRepository.update(conversation.id, {
+            participantProfilePicture: incoming.senderProfilePicture,
+          });
+        }
+      } else {
+        // Create new conversation
+        const newConversation = await this.conversationRepository.create({
+          userId,
+          platform,
+          platformConversationId: incoming.platformConversationId,
+          platformParticipantId: incoming.senderId,
+          participantName: incoming.senderName,
+          participantProfilePicture: incoming.senderProfilePicture,
+          entryMode: EntryMode.SYNCED,
+          unreadCount: 0,
+          hasOrderDetected: false,
+        });
+        conversationId = newConversation.id;
+      }
+
+      // Create message
+      const message = await this.messageRepository.create({
+        conversationId,
+        content: incoming.content,
+        sender: MessageSender.CUSTOMER,
+        platform,
+        platformMessageId: incoming.platformMessageId,
+        messageType: (incoming.messageType as MessageType) || MessageType.TEXT,
+        status: MessageStatus.DELIVERED,
+        timestamp: incoming.timestamp,
+        entryMode: EntryMode.SYNCED,
+        isRead: false,
+        metadata: incoming.metadata as object,
+      });
+
+      // Perform AI analysis on customer messages
+      // Requirements: 2.1, 2.3, 2.4, 2.5
+      let aiAnalysisResult: IAIAnalysisOutput | null = null;
+      let orderDetected = false;
+
+      try {
+        // Get conversation context for better AI analysis
+        const recentMessages = await this.messageRepository.findRecentByConversation(
+          conversationId,
+          5
+        );
+        const conversationContext = recentMessages
+          .reverse()
+          .map((m) => `${m.sender}: ${m.content}`);
+
+        // Call AI service to analyze the message
+        aiAnalysisResult = await this.aiService.analyzeMessage({
+          messageContent: incoming.content,
+          conversationId,
+          platform: platform as 'whatsapp' | 'instagram',
+          conversationContext,
+        });
+
+        // Store AI analysis results in message
+        // Requirements: 2.3, 2.4, 3.1, 3.2
+        const messageAIAnalysis: MessageAIAnalysis & {
+          suggestedResponses?: IResponseSuggestion[];
+          pendingAnalysis?: boolean;
+        } = {
+          orderDetected: aiAnalysisResult.orderDetected,
+          confidenceScore: aiAnalysisResult.confidence,
+          extractedDetails: aiAnalysisResult.extractedDetails,
+          customerIntent: aiAnalysisResult.customerIntent as MessageAIAnalysis['customerIntent'],
+          suggestedResponses: aiAnalysisResult.suggestedResponses,
+          analyzedAt: new Date(),
+          pendingAnalysis: false,
+        };
+
+        await this.messageRepository.updateAIAnalysis(message.id, messageAIAnalysis);
+        message.aiAnalysis = messageAIAnalysis;
+
+        // Check if order is detected with confidence above threshold
+        // Requirements: 2.2
+        if (
+          aiAnalysisResult.orderDetected &&
+          aiAnalysisResult.confidence > ORDER_DETECTION_THRESHOLD
+        ) {
+          orderDetected = true;
+          await this.conversationRepository.setOrderDetected(conversationId, true);
+        }
+      } catch (error) {
+        // Handle AI service failures gracefully
+        // Requirements: 2.5
+        console.error('AI analysis failed for message:', message.id, error);
+
+        // Mark message for later analysis
+        const pendingAnalysis: MessageAIAnalysis & { pendingAnalysis?: boolean } = {
+          orderDetected: false,
+          confidenceScore: 0,
+          pendingAnalysis: true,
+          analyzedAt: new Date(),
+        };
+        await this.messageRepository.updateAIAnalysis(message.id, pendingAnalysis);
+        message.aiAnalysis = pendingAnalysis;
+      }
+
+      processedMessages.push(message as ProcessedMessage);
+      conversationsToUpdate.add(conversationId);
+
+      // Emit events after message storage
+      // Requirements: 4.1, 4.2
+      await this.emitMessageEvents(
+        userId,
+        message,
+        conversationId,
+        platform,
+        orderDetected,
+        aiAnalysisResult
+      );
+    }
+
+    // Update conversation last messages and unread counts
+    for (const conversationId of conversationsToUpdate) {
+      const latestMessage = await this.messageRepository.findLatestByConversation(conversationId);
+
+      if (latestMessage) {
+        await this.conversationRepository.updateLastMessage(
+          conversationId,
+          latestMessage.content,
+          latestMessage.sender,
+          latestMessage.timestamp
+        );
+      }
+
+      // Increment unread count for each new customer message
+      const newCustomerMessages = processedMessages.filter(
+        (m) => m.conversationId === conversationId && m.sender === MessageSender.CUSTOMER
+      );
+
+      if (newCustomerMessages.length > 0) {
+        const conversation = await this.conversationRepository.findById(conversationId);
+        if (conversation) {
+          await this.conversationRepository.updateUnreadCount(
+            conversationId,
+            conversation.unreadCount + newCustomerMessages.length
+          );
+
+          // Emit conversation updated event
+          // Requirements: 4.3
+          const conversationUpdatedEvent: ConversationUpdatedEvent = {
+            conversationId,
+            unreadCount: conversation.unreadCount + newCustomerMessages.length,
+            lastMessage: {
+              content: latestMessage?.content || '',
+              timestamp: latestMessage?.timestamp || new Date(),
+              sender: latestMessage?.sender || MessageSender.CUSTOMER,
+            },
+            hasOrderDetected: conversation.hasOrderDetected,
+          };
+          this.eventEmitter.emitConversationUpdated(userId, conversationUpdatedEvent);
+        }
+      }
+    }
+
+    return processedMessages;
+  }
+
+  /**
+   * Emit message events for real-time notifications
+   * Requirements: 4.1, 4.2
+   */
+  private async emitMessageEvents(
+    userId: string,
+    message: Message,
+    conversationId: string,
+    platform: Platform,
+    orderDetected: boolean,
+    aiAnalysisResult: IAIAnalysisOutput | null
+  ): Promise<void> {
+    // Emit NewMessageEvent
+    // Requirements: 4.1, 4.3
+    const newMessageEvent: NewMessageEvent = {
+      conversationId,
+      messageId: message.id,
+      messagePreview: message.content.substring(0, 100),
+      platform,
+      timestamp: message.timestamp,
+      orderDetected,
+    };
+    this.eventEmitter.emitNewMessage(userId, newMessageEvent);
+
+    // Emit OrderDetectedEvent if order was detected
+    // Requirements: 4.2
+    if (orderDetected && aiAnalysisResult) {
+      const orderDetectedEvent: OrderDetectedEvent = {
+        ...newMessageEvent,
+        extractedDetails: aiAnalysisResult.extractedDetails,
+        confidence: aiAnalysisResult.confidence,
+        suggestedResponses: aiAnalysisResult.suggestedResponses,
+      };
+      this.eventEmitter.emitOrderDetected(userId, orderDetectedEvent);
+    }
   }
 
   /**

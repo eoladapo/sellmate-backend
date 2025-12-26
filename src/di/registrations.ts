@@ -32,6 +32,7 @@ import { MessageRepository } from '../modules/conversations/repositories/message
 import { ConversationService } from '../modules/conversations/services/conversation.service';
 import { MessageSyncService } from '../modules/conversations/services/message-sync.service';
 import { MessageDeliveryService } from '../modules/conversations/services/message-delivery.service';
+import { EventEmitterService } from '../modules/conversations/events/event-emitter.service';
 
 // Conversations Module - Controllers
 import { ConversationController } from '../modules/conversations/controllers/conversation.controller';
@@ -96,8 +97,13 @@ import { SubscriptionController } from '../modules/billing/controllers/subscript
 // Integrations Module - Repositories
 import { IntegrationConnectionRepository } from '../modules/integrations/repositories/integration-connection.repository';
 
+// Integrations Module - Services
+import { SellerLookupService } from '../modules/integrations/services/seller-lookup.service';
+import { WebhookProcessingService } from '../modules/integrations/services/webhook-processing.service';
+
 // Integrations Module - Controllers
 import { IntegrationController } from '../modules/integrations/controllers/integration.controller';
+import { WebhookController } from '../modules/integrations/controllers/webhook.controller';
 
 // Shared Services
 import { RedisService } from '../shared/services/redis.service';
@@ -143,6 +149,7 @@ export function registerDependencies(): void {
 
   // Services
   container.register(TOKENS.ConversationService, { useClass: ConversationService });
+  container.register(TOKENS.EventEmitterService, { useClass: EventEmitterService });
   container.register(TOKENS.MessageSyncService, { useClass: MessageSyncService });
   container.register(TOKENS.MessageDeliveryService, { useClass: MessageDeliveryService });
 
@@ -233,8 +240,13 @@ export function registerDependencies(): void {
   // Repositories
   container.register(TOKENS.IntegrationConnectionRepository, { useClass: IntegrationConnectionRepository });
 
+  // Services
+  container.register(TOKENS.SellerLookupService, { useClass: SellerLookupService });
+  container.register(TOKENS.WebhookProcessingService, { useClass: WebhookProcessingService });
+
   // Controllers
   container.register(TOKENS.IntegrationController, { useClass: IntegrationController });
+  container.register(TOKENS.WebhookController, { useClass: WebhookController });
 
   console.log('📦 All dependency registrations complete');
 }

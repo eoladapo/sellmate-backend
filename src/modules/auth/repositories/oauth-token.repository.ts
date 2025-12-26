@@ -25,6 +25,19 @@ export class OAuthTokenRepository implements IOAuthTokenRepository {
     });
   }
 
+  async findByBusinessAccountId(
+    platform: 'whatsapp' | 'instagram',
+    businessAccountId: string
+  ): Promise<OAuthToken | null> {
+    return this.repository.findOne({
+      where: {
+        platform,
+        businessAccountId,
+        isActive: true,
+      },
+    });
+  }
+
   async upsert(tokenData: {
     userId: string;
     platform: 'whatsapp' | 'instagram';

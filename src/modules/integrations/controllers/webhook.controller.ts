@@ -1,16 +1,22 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
+import { TOKENS } from '../../../di/tokens';
 import { Platform } from '../enums';
-import { WebhookPayload } from '../interfaces';
+import { WebhookPayload, IWebhookProcessingService } from '../interfaces';
 import { WhatsAppIntegrationService } from '../services/whatsapp-integration.service';
 import { InstagramIntegrationService } from '../services/instagram-integration.service';
 
 /**
  * Webhook Controller
  * Handles incoming webhooks from WhatsApp and Instagram
+ * Requirements: 1.1, 1.2, 6.1, 6.2
  */
 @injectable()
 export class WebhookController {
+  constructor(
+    @inject(TOKENS.WebhookProcessingService)
+    private webhookProcessingService: IWebhookProcessingService
+  ) { }
   /**
    * Handle WhatsApp webhook verification (GET)
    */
@@ -38,6 +44,7 @@ export class WebhookController {
 
   /**
    * Handle WhatsApp webhook events (POST)
+   * Requirements: 1.1, 6.1
    */
   async handleWhatsAppWebhook(req: Request, res: Response, _next: NextFunction): Promise<void> {
     try {
@@ -61,22 +68,34 @@ export class WebhookController {
       res.status(200).send('EVENT_RECEIVED');
 
       // Process webhook asynchronously
-      // In production, this should be queued for processing
+      // Parse messages from the webhook payload
       try {
-        const messages = await service.processWebhook(payload);
+        const parsedMessages = await service.processWebhook(payload);
 
-        // TODO: Store messages in database and trigger notifications
-        console.log(`Processed ${messages.length} WhatsApp messages`);
+        if (parsedMessages.length > 0) {
+          // Process messages through WebhookProcessingService
+          // This handles seller lookup, message storage, AI analysis, and event emission
+          const result = await this.webhookProcessingService.processWebhook(
+            Platform.WHATSAPP,
+            payload,
+            parsedMessages
+          );
 
-        // Emit events for real-time updates
-        // eventEmitter.emit('whatsapp:messages', messages);
+          console.log(
+            `[WebhookController] WhatsApp webhook processed: ${result.messagesStored}/${result.messagesProcessed} messages stored, ${result.ordersDetected} orders detected`
+          );
+
+          if (result.errors.length > 0) {
+            console.warn('[WebhookController] WhatsApp webhook processing errors:', result.errors);
+          }
+        }
       } catch (processError) {
-        console.error('Error processing WhatsApp webhook:', processError);
+        console.error('[WebhookController] Error processing WhatsApp webhook:', processError);
       }
     } catch (error) {
       // Still acknowledge receipt to prevent retries
       res.status(200).send('EVENT_RECEIVED');
-      console.error('WhatsApp webhook error:', error);
+      console.error('[WebhookController] WhatsApp webhook error:', error);
     }
   }
 
@@ -107,6 +126,7 @@ export class WebhookController {
 
   /**
    * Handle Instagram webhook events (POST)
+   * Requirements: 1.2, 6.2
    */
   async handleInstagramWebhook(req: Request, res: Response, _next: NextFunction): Promise<void> {
     try {
@@ -130,20 +150,33 @@ export class WebhookController {
       res.status(200).send('EVENT_RECEIVED');
 
       // Process webhook asynchronously
+      // Parse messages from the webhook payload
       try {
-        const messages = await service.processWebhook(payload);
+        const parsedMessages = await service.processWebhook(payload);
 
-        // TODO: Store messages in database and trigger notifications
-        console.log(`Processed ${messages.length} Instagram messages`);
+        if (parsedMessages.length > 0) {
+          // Process messages through WebhookProcessingService
+          // This handles seller lookup, message storage, AI analysis, and event emission
+          const result = await this.webhookProcessingService.processWebhook(
+            Platform.INSTAGRAM,
+            payload,
+            parsedMessages
+          );
 
-        // Emit events for real-time updates
-        // eventEmitter.emit('instagram:messages', messages);
+          console.log(
+            `[WebhookController] Instagram webhook processed: ${result.messagesStored}/${result.messagesProcessed} messages stored, ${result.ordersDetected} orders detected`
+          );
+
+          if (result.errors.length > 0) {
+            console.warn('[WebhookController] Instagram webhook processing errors:', result.errors);
+          }
+        }
       } catch (processError) {
-        console.error('Error processing Instagram webhook:', processError);
+        console.error('[WebhookController] Error processing Instagram webhook:', processError);
       }
     } catch (error) {
       res.status(200).send('EVENT_RECEIVED');
-      console.error('Instagram webhook error:', error);
+      console.error('[WebhookController] Instagram webhook error:', error);
     }
   }
 }

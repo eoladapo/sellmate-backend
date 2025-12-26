@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { TOKENS } from '../../../di/tokens';
+import { bind } from '../../utils/controller-bind';
 import { WebhookController } from '../../../modules/integrations/controllers/webhook.controller';
 
 /**
@@ -6,7 +8,6 @@ import { WebhookController } from '../../../modules/integrations/controllers/web
  * These routes handle incoming webhooks from Meta platforms
  */
 const router = Router();
-const webhookController = new WebhookController();
 
 /**
  * WhatsApp Webhook Routes
@@ -59,7 +60,7 @@ const webhookController = new WebhookController();
  */
 router.get(
   '/whatsapp',
-  webhookController.verifyWhatsAppWebhook.bind(webhookController)
+  bind<WebhookController>(TOKENS.WebhookController, 'verifyWhatsAppWebhook')
 );
 
 /**
@@ -125,7 +126,7 @@ router.get(
  */
 router.post(
   '/whatsapp',
-  webhookController.handleWhatsAppWebhook.bind(webhookController)
+  bind<WebhookController>(TOKENS.WebhookController, 'handleWhatsAppWebhook')
 );
 
 /**
@@ -179,7 +180,7 @@ router.post(
  */
 router.get(
   '/instagram',
-  webhookController.verifyInstagramWebhook.bind(webhookController)
+  bind<WebhookController>(TOKENS.WebhookController, 'verifyInstagramWebhook')
 );
 
 /**
@@ -257,7 +258,7 @@ router.get(
  */
 router.post(
   '/instagram',
-  webhookController.handleInstagramWebhook.bind(webhookController)
+  bind<WebhookController>(TOKENS.WebhookController, 'handleInstagramWebhook')
 );
 
 export default router;

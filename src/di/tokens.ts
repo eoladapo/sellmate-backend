@@ -35,6 +35,7 @@ export const TOKENS = {
   ConversationService: Symbol('IConversationService'),
   MessageSyncService: Symbol('IMessageSyncService'),
   MessageDeliveryService: Symbol('MessageDeliveryService'),
+  EventEmitterService: Symbol('IMessageEventEmitter'),
 
   // Conversations Module - Controllers
   ConversationController: Symbol('ConversationController'),
@@ -99,8 +100,13 @@ export const TOKENS = {
   // Integrations Module - Repositories
   IntegrationConnectionRepository: Symbol('IntegrationConnectionRepository'),
 
+  // Integrations Module - Services
+  SellerLookupService: Symbol('ISellerLookupService'),
+  WebhookProcessingService: Symbol('IWebhookProcessingService'),
+
   // Integrations Module - Controllers
   IntegrationController: Symbol('IntegrationController'),
+  WebhookController: Symbol('WebhookController'),
 } as const;
 
 // Type helper for token keys

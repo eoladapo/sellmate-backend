@@ -10,6 +10,15 @@ export interface IOAuthTokenRepository {
   ): Promise<OAuthToken | null>;
 
   /**
+   * Find active OAuth token by business account ID and platform
+   * Used to identify sellers from webhook payloads
+   */
+  findByBusinessAccountId(
+    platform: 'whatsapp' | 'instagram',
+    businessAccountId: string
+  ): Promise<OAuthToken | null>;
+
+  /**
    * Create or update OAuth token
    */
   upsert(tokenData: {
