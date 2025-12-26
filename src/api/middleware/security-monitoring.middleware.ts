@@ -1,9 +1,3 @@
-/**
- * Security Monitoring Middleware
- * Integrates security event logging with request handling
- * Requirements: 8.5
- */
-
 import { Request, Response, NextFunction } from 'express';
 import {
   logSecurityEvent,

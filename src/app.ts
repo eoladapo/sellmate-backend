@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import express, { Application } from 'express';
-import path from 'path';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.config';
@@ -105,8 +104,7 @@ class App {
    * Initialize application routes
    */
   private initializeRoutes(): void {
-    // Serve static files from public directory (for test pages)
-    this.app.use(express.static(path.join(__dirname, '..', 'public')));
+
 
     // Swagger API documentation
     this.app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
