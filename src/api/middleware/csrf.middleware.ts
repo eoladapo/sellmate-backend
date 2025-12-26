@@ -1,9 +1,3 @@
-/**
- * CSRF Protection Middleware
- * Implements Cross-Site Request Forgery protection
- * Requirements: 8.2, 8.4
- */
-
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { AppError } from './error.middleware';
@@ -130,38 +124,6 @@ export const csrfProtection = (req: Request, _res: Response, next: NextFunction)
 
   next();
 };
-
-/**
- * CSRF token endpoint handler
- * Returns a new CSRF token for the client
- */
-export const getCsrfToken = (req: Request, res: Response): void => {
-  res.json({
-    success: true,
-    data: {
-      csrfToken: req.csrfToken,
-    },
-  });
-};
-
-/**
- * Clean up expired CSRF tokens (call periodically)
- */
-export function cleanupExpiredCsrfTokens(): void {
-  const now = Date.now();
-  let cleaned = 0;
-
-  for (const [sessionId, data] of csrfTokenStore.entries()) {
-    if (data.expires < now) {
-      csrfTokenStore.delete(sessionId);
-      cleaned++;
-    }
-  }
-
-  if (cleaned > 0) {
-    console.log(`🧹 Cleaned up ${cleaned} expired CSRF tokens`);
-  }
-}
 
 // Extend Express Request type
 declare global {
