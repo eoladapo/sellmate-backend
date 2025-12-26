@@ -122,7 +122,6 @@ export const appConfig = {
       accountSid: envSchema.TWILIO_ACCOUNT_SID,
       authToken: envSchema.TWILIO_AUTH_TOKEN,
       phoneNumber: envSchema.TWILIO_PHONE_NUMBER,
-      verifyServiceSid: envSchema.TWILIO_VERIFY_SERVICE_SID,
     },
   },
 
