@@ -48,9 +48,7 @@ class App {
     this.initializeErrorHandling();
   }
 
-  /**
-   * Initialize Express middleware in correct order
-   */
+
   private initializeMiddleware(): void {
     // Trust proxy for accurate IP addresses
     this.app.set('trust proxy', 1);

@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
  */
 export const requestId = (req: Request, res: Response, next: NextFunction): void => {
   // Generate unique request ID
-  const reqId = randomUUID();
+  const reqId = req.headers['x-request-id'] as string || randomUUID();
 
   // Store in response locals for access in other middleware
   res.locals.requestId = reqId;
@@ -16,7 +16,7 @@ export const requestId = (req: Request, res: Response, next: NextFunction): void
   res.setHeader('X-Request-ID', reqId);
 
   // Add to request object for logging
-  (req as any).requestId = reqId;
+  req.requestId = reqId;
 
   next();
 };

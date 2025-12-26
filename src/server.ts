@@ -66,11 +66,8 @@ export const startServer = async (): Promise<void> => {
 
     // Start Express server
     server = app.listen(PORT, () => {
-      console.log(`🚀 SellMate Backend API running in ${NODE_ENV} mode`);
       console.log(`📡 Server listening on port ${PORT}`);
-      console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api/v1/docs`);
-      console.log(`🧪 Auth Test Page: http://localhost:${PORT}/test-auth.html`);
     });
 
     // Handle shutdown signals
